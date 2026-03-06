@@ -1,0 +1,347 @@
+%%
+%% This is file `scnumacro.sty', generated with the Tex.
+%%
+\ProvidesPackage{scnumacro}
+[2020/02/29 v1.0 Tex scnumacro (China)]
+%%
+%% ----------------------------------------------------------------
+%% Copyright (C) 2020.02.29-   by Prof. Zhong Liuqiang <zhong@m.scnu.edu.cn>
+%% ----------------------------------------------------------------
+%% Frist Revision  2020.02.29
+%% Second Revision
+%%
+%% Please send error reports and suggestions for
+%% improvements to the above email address.
+
+% 在 SCNUThesis.cls 中已经调用了如下宏包
+% {amssymb}   {setspace} {titlesec}
+
+
+%%%======================================
+%%　　　　　　　　　　　　　数　学　符　号　
+%%%======================================
+
+\usepackage{amsmath,amsthm,amsfonts,bbm,mathrsfs}
+% 直立希腊字母字体
+\usepackage{upgreek}
+
+%\usepackage{mathpazo}
+
+%%%======================================
+%%　　　　　　　　　　　　　定理引理等环境　
+%%%======================================
+
+\newtheorem{lemma}{~~~~~引理}[section]
+\newtheorem{theorem}{~~~~~定理}[section]
+\newtheorem{corollary}{~~~~~~~~~~推论}[section]
+\theoremstyle{definition}\newtheorem{definition}{~~~~~定义}[section]
+\newtheorem{example}{~~~~~例}[section]
+\newtheorem{proposition}{~~~~~命题}[section]
+\theoremstyle{remark}\newtheorem{remark}{~~~~~注}[section]
+\newtheorem{algorithmenv}{~~~~~算法}[section]
+\newtheorem{assumption}{~~~~~约定}[section]
+\newtheorem{property}{~~~~~性质}[section]
+\newtheorem{question}{思考题}[section]
+\newtheorem{exercise}{~~~~~练习}[section]
+\newtheorem{condition}{~~~~~条件}
+\newtheorem{conclusion}{~~~~~结论}
+
+\renewenvironment{proof}[1][证明]{\noindent \textbf{#1.} }{\hfill$\Box$}
+
+\makeatletter
+\newenvironment{analysis}[1][\color{blue}\bf 分析:]%
+{%
+  \begin{center}
+    \begin{lrbox}{\@tempboxa}%
+      \begin{minipage}{\textwidth}
+        {\color{blue}\bfseries
+          %#1} \\ \hspace*{2em} }{%
+      #1}  }{%
+      \end{minipage}%
+    \end{lrbox}
+    %\colorbox{gray}{\noindent\usebox{\@tempboxa}} \end{center}  %
+    \fbox{\usebox{\@tempboxa}}
+  \end{center}%
+  %\colorbox{red}{\fbox{\noindent\usebox{\@tempboxa}} \end{center}
+}
+\makeatother
+
+\newenvironment{solve}[1][\color{blue}\bf 解:]{
+  \begin{trivlist}
+  \item[\hskip \labelsep {\color{blue}\bfseries
+  #1}]}{\hfill$\Box$
+\end{trivlist}}
+
+%%%======================================
+%%　　　　　　　　　　　　图  形   及　表　　格
+%%%======================================
+%% graphics packages
+\RequirePackage{graphicx}
+%% 并列子图
+%\RequirePackage{subfigure}
+\usepackage{epsfig}
+% latex里面插入eps格式的图片
+%% 如果插入的图片没有指定扩展名，那么依次搜索下面的扩展名所对应的文件
+\DeclareGraphicsExtensions{.pdf,.eps,.png,.jpg,.jpeg}
+
+\usepackage{flafter}
+% 因为图形可浮动到当前页的顶部，所以它可能会出现在它所在文本的前面。
+% 要防止这种情况，可使用 flafter 宏包
+\usepackage[below]{placeins}
+% 要求浮动的图形在它们所在的章节中排出，加 [section] 选项。而 [below] 选项
+%则更加宽松一些，允许上一个section的浮动图形出现在下一个section的开始部分
+%% 图文混排用宏包，目前选用 floatflt.sty
+%\usepackage{floatflt}
+%% floatflt 宏包提供了 floatingfigure 和 floatingtable 两个环境，可将浮动图形或表格放置于文字段落的旁边。
+
+\usepackage[below]{placeins}    % 提供处理浮动对象的 \FloatBarrier 命令，
+% 使所有未处理的浮动图形立即被处理
+
+%\usepackage{endfloat}   % 有些期刊要求将图表和正文文本分开排放。
+% 这时用endfloat宏包可将浮动对象放置到文件的最后
+
+%%% 设置图形
+\graphicspath{{Figures/}}
+
+%%%======================================
+%%　　　　　　　　　　　　　参　考　文　献
+%%%======================================
+% sort and compress citations
+%\RequirePackage[sort&compress,numbers]{natbib}
+% 上标引用
+\usepackage[numbers, sort]{natbib}
+\newcommand{\upcite}[1]{\textsuperscript{\cite{#1}}}
+
+%%%======================================
+%%　　　　　　　　　　　　　索     　　　 引　
+%%%======================================
+
+\usepackage{makeidx}
+% 利用 theindex 环境生成一个索引记录
+%  在正文中的使用方式有如下三种
+%  \index{主条目}
+%  \index{主条目 ! 子条目}
+%  \index{主条目 ! 子条目 ! 子条目}  各个子条目可以是除 ! @ 和 | 字符处的任意组合,其中分隔符必须为 惊叹号
+
+%\usepackage{showidx}
+% 使用 showidx 会把 \index 命令中的索引项显示为边注, 在它所处的那页边界从页顶开始.
+% 当浏览文档的初始版本,以查看所有的索引项是否位于正确的页面  或者  是否生成了新增项, 这一方法相当有用
+
+% zlq 在正式发行时， 最好去掉 \usepackage{showidx}
+
+%  \index{}   \index*{} 不出现
+
+\usepackage{cases, epsf}
+
+\usepackage{extarrows}%长等号长箭头宏包
+
+\usepackage{latexsym, indentfirst, hyperref}
+%\usepackage[bookmarks,colorlinks,breaklinks]{hyperref}
+
+\usepackage{bm}
+\usepackage{float}
+\usepackage{enumerate}
+
+%%%======================================
+%%　　　　　　　　　　　　　颜　　　　　色　　　　　　
+%%%======================================
+
+\RequirePackage{xcolor}
+
+% Color
+%\usepackage[usenames]{color}  %一般命令可以给图形、表格和文字等设置颜色。它已预先定义和命名了68种颜色, 参考网站  http://zzg34b.w3.c361.com/package/tool.htm   如果使用其中某种颜色，直呼其名就可以了：\color{颜色名}
+\usepackage{xcolor}
+\newcommand{\black}{\color{black}}
+\newcommand{\blue}{\color{blue}}
+\newcommand{\green}{\color{green}}
+\newcommand{\red}{\color{red}}
+\newcommand{\white}{\color{withe}}
+\newcommand{\yellow}{\color{yellow}}
+
+%%%======================================
+%%　　　　　　　　　　　　　listings 源代码　　　　　　
+%%%======================================
+
+%\RequirePackage{listings}
+%\lstset{tabsize=4, %
+%  frame=shadowbox, %把代码用带有阴影的框圈起来
+%  commentstyle=\color{red!50!green!50!blue!50},%浅灰色的注释
+%  rulesepcolor=\color{red!20!green!20!blue!20},%代码块边框为淡青色
+%  keywordstyle=\color{blue!90}\bfseries, %代码关键字的颜色为蓝色，粗体
+%  showstringspaces=false,%不显示代码字符串中间的空格标记
+%  stringstyle=\ttfamily, % 代码字符串的特殊格式
+%  keepspaces=true, %
+%  breakindent=22pt, %
+%  numbers=left,%左侧显示行号
+%  stepnumber=1,%
+%  numberstyle=\tiny, %行字体用小号
+%  basicstyle=\footnotesize, %
+%  showspaces=false, %
+%  flexiblecolumns=true, %
+%  breaklines=true, %对过长的代码自动换行
+%  breakautoindent=true,%
+%  breakindent=4em, %
+%  aboveskip=1em, %代码块边框
+%  %% added by http://bbs.ctex.org/viewthread.php?tid=53451
+%  fontadjust,
+%  captionpos=t,
+%  framextopmargin=2pt,framexbottommargin=2pt,abovecaptionskip=-3pt,belowcaptionskip=3pt,
+%  xleftmargin=4em,xrightmargin=4em, % 设定listing左右的空白
+%  texcl=true,
+%  % 设定中文冲突，断行，列模式，数学环境输入，listing数字的样式
+%  extendedchars=false,columns=flexible,mathescape=true
+%  numbersep=-1em
+%}
+%\renewcommand{\lstlistingname}{代码} %% 重命名Listings标题头
+
+%%%======================================
+%%　　　　　　　　　　　　其　　　　它　
+%%%======================================
+
+\usepackage{index}
+\usepackage{shorttoc}
+
+%\def\zlq#1{\fbox{\color{blue}\parbox{\textwidth}{#1}} }
+\usepackage{calc}
+\newcommand{\parlength}{\textwidth-2\fboxsep-2\fboxrule}
+\def\zlq#1{\noindent{\color{blue}\fbox{\parbox{\parlength}{ #1}}} }
+
+
+% Operators
+% 3D
+\newcommand{\di}{\mathrm{div}}
+\newcommand{\grad}{{\bf grad}}
+\newcommand{\curl}{{\bf curl}}
+
+%2D
+\newcommand{\curlt}{\mathrm{curl}}
+
+% Symbol
+\newcommand{\BLbrace}{ \left\{\kern -0.36em\left\{     }
+\newcommand{\BRbrace}{ \right\}\kern -0.36em\right\} }
+\newcommand{\Lbrace}{ \left\{\kern -0.23em\left\{     }
+\newcommand{\Rbrace}{ \right\}\kern -0.23em\right\} }
+
+\newcommand{\BLbracket }{ \left[\kern -0.19em\left[    }
+\newcommand{\BRbracket }{ \right] \kern-0.19em\right] }
+\newcommand{\Lbracket }{ \left[\kern -0.09em\left[    }
+\newcommand{\Rbracket }{ \right] \kern-0.09em\right] }
+
+\newcommand{\supp}{\mathrm{supp}}
+\newcommand{\osc}{\mathrm{osc}}
+\newcommand{\ste}
+{\mathrel{\raise2pt\hbox{${\mathop=\limits_{\raise1pt\hbox{\mbox{$\sim$}}}}$}}}
+
+% Functional space
+% L^2
+\newcommand{\ltwo}{L^2(\Omega)}
+\newcommand{\Ltwo}{(L^2(\Omega))^3}
+% H^1
+\newcommand{\hone}{H^1(\Omega)}
+\newcommand{\honez}{H^1_0(\Omega)}
+\newcommand{\Hone}{(H^1(\Omega))^3}
+\newcommand{\Honez}{(H^1_0(\Omega)) ^3}
+% Hcurl
+\newcommand{\hcurl}{\boldsymbol{H}(\curl; \Omega)}
+\newcommand{\hcurlz}{\boldsymbol{H}_0(\curl; \Omega)}
+% Hdiv
+\newcommand{\hdiv}{\boldsymbol{H}(\di; \Omega)}
+\newcommand{\hdivz}{\boldsymbol{H}_0(\di; \Omega)}
+
+
+% Integral sign
+\newcommand{\dl}{\mathrm{d} l}  % 线积分
+\newcommand{\ds}{\mathrm{d} s}  % 面积分
+\newcommand{\dS}{\mathrm{d} S}  % 面积分
+\newcommand{\dx}{\mathrm{d}\boldsymbol{x}} % 体积分
+
+
+%%%%%%%%%%%% 程序代码
+% Matlab
+%\usepackage{listings}
+%\lstset{language=Matlab}%代码语言使用的是matlab
+%\lstset{breaklines}%自动将长的代码行换行排版
+%\lstset{extendedchars=false}%解决代码跨页时，章节标题，页眉等汉字不显示的问题
+%\lstset{numbers=left,
+%numberstyle= \tiny,keywordstyle= \color{ blue!70},commentstyle=\color{red!50!green!50!blue!50},
+%frame=shadowbox, rulesepcolor= \color{ red!20!green!20!blue!20},
+%escapeinside=``}
+%%%%%%%
+
+\usepackage{multicol}
+
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+
+\makeatletter
+\renewcommand{\ALG@name}{算法} % Replace "New Name" with your desired label text
+\makeatother
+
+\usepackage{bm}
+\usepackage{subcaption,float}
+\usepackage{mathpartir}
+\usepackage{stmaryrd}
+\usepackage{xspace}
+\usepackage{minted}
+
+\definecolor{bg}{rgb}{.9, .9, .9}
+
+\setminted{
+  baselinestretch = 1,
+  tabsize      = 4,           % Tab 宽度
+%  frame        = single,      % 单线边框（替代 shadowbox）
+%  framesep     = 1pt,        % 边框与代码之间的内边距
+  framerule    = 1pt,       % 边框线宽
+  rulecolor    = \color{red!20!green!20!blue!20}, % 边框颜色（淡青）
+%  linenos      = true,        % 左侧显示行号
+%  numbersep    = -1em,        % 行号与代码的距离
+  %bgcolor      = bg,
+  %bgcolorpadding=0.5em
+%  fontsize     = \footnotesize % 代码基本字体大小
+  %breaklines   = true,        % 自动换行
+  %breakindent  = 4em,         % 换行缩进
+  xleftmargin  = .5em,         % 左边距
+  xrightmargin = .5em          % 右边距
+}
+\renewcommand{\listingscaption}{代码}
+
+
+\usepackage{fancyhdr}
+\usepackage{wrapfig}
+\usepackage{pifont}
+% 提供各种符号和图案的宏包，包括圆圈数字、箭头、星星、钩子等，常用于文档的装饰和美化
+\usepackage{memhfixc}
+\usepackage{fancyvrb}
+\usepackage{pxrubrica}
+\usepackage{times}
+\usepackage[no-math]{fontspec}
+\setmainfont[SmallCapsFont=lmromancaps10-regular.otf]{Times New Roman}
+
+
+%  表格
+\usepackage{diagbox}  %表格中添加斜线
+\usepackage{tabularx} % 够根据页面宽度自动调整表格的列宽
+\usepackage{makecell}%表格中排版多行文本，并设置不同的对齐方式。
+\usepackage{booktabs}
+% 通过引入不同粗细和间距的水平线，构建简洁、优雅且易于阅读的“三线表”，
+\usepackage{multirow} % 创建表格时跨行合并单元格
+
+%\usepackage{color}
+\usepackage{needspace}
+\usepackage{setspace}
+% 设置整个文档的行距, 可以在修改认文时为了增加可读性时, 加大行距
+\allowdisplaybreaks[3]
+% 允许跨页公式 数字3表示跨页的强度。数值越大，跨页的可能性越大‌
+
+%\usepackage{afterpage}
+%\newcommand\myemptypage{
+%  \null
+%  \thispagestyle{empty}
+%  \addtocounter{page}{-1}
+%  \newpage
+%}
+
+\makeindex
+
+\endinput

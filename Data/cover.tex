@@ -1,0 +1,152 @@
+% !Mode:: "TeX:UTF-8"
+%%%论文封面
+%%  教育硕士专业学位是按   华南师范大学教师教育学部 2024 年 6 月 6 日颁布的华南师范大学研究生学位论文撰写规范  所制定
+%%  学术硕士专业学位是按 华南师范大学数学科学学院 2024 年 5 月 23 日颁布年颁布的 研究生学位论文撰写规范（适用学科：0701数学） 所制定
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 专业学位     中文封面内容
+%% “论文分类号”按《中国图书资料分类法》的分类号填写
+%%% 具体可查询 http://ztflh.xhma.com
+% 分类号 学术型:
+% 计算数学 O24   应用数学 O29
+% 概率论与数理统计 O21   运筹学  O22
+% 统计学 C8   课程与教学论  G427
+
+\classification{}  % 分类号
+\UDC{} % UDC: 表示国际十进分类法(Universal Decimal Classification),是世界一般报告或者论文的封面在左上角注明分类号，便于信息交换和处理。
+%%%  专业学位的 分类号、UDC：不填写
+%%%  学术学位的  分类号: 有  计算数学 O24   应用数学 O29   概率论与数理统计 O21    运筹学  O22 统计学 C8   课程与教学论  G427
+\confidential{公开}
+%% “密级：学位论文密级分为公开、内部、涉密。内部论文和涉密论文严格按照学校审批的保密级别和保密期限填写，如内部*年、秘密*年；其他论文均填公开
+\studentID{20222005253}
+%%   填写学位申请人的学号
+
+\type{本~科}
+
+%%% ====================
+%%% ====== 中文标题 ======
+%%% ====================
+%%% 论文标题: 应准确概括整篇论文的核心内容，简明扼要，一般不超过25个汉字。必要时可加副标题。
+\title{\CASTunderline[\textwidth]{TinyTheorem：}
+  \\ \vspace{0.18cm}
+\CASTunderline[\textwidth]{一个依值类型的编程语言暨定理证明器原型}}
+%% 如上是封面中的 论文中文标题, 需要人工分行
+
+\titleab{基于依赖类型论的编程语言暨定理证明器实现}
+%\subtitle{}    % 中文副标题,  排版时自动居右, 这是可选项, 若不需要可注解掉
+
+%%% ====================
+%%% ====== 英文标题 ======
+%%% ====================
+%%% 英文标题
+
+\etitle{\CASTunderline[\textwidth]{TinyTheorem: }
+  \\ \vspace{0.18cm}
+  \CASTunderline[\textwidth]{A prototype for a dependently-typed}
+  \\ \vspace{0.18cm}
+  \CASTunderline[\textwidth]{programming language with theorem proving}
+}
+
+%%%==================== ==========
+%%%==========  学位申请人 ==========
+\author{高振明}
+\eauthor{GAO Zhenming}
+%%% 英（外）文封面作者姓名按姓在前、名在后的格式书写，姓名需写全拼，如LI Jianguo
+
+%%%==================== ==========
+%%%==========  学科专业  ==========
+%%% 学科专业: 申请人所在学科专业，必须严格按参照学科代码/专业学位代码字典中的二级学科名称/专业学位领域名称填写，若所选一级学科/专业学位类别下无二级学科/专业学位领域，则填写一级学科/专业学位类别名称，不可用简称。
+
+%%%    学术学位
+%  \major{计算数学}
+% \emajor{Computional Mathematics}
+%  \major{应用数学}
+% \emajor{Applied Mathematics}
+%  \major{基础数学}
+% \emajor{Pure Mathematics}
+%  \major{概率论与数理统计}
+% \emajor{Probability Theory and Mathematic Statistics}
+%  \major{运筹学与控制论}
+% \emajor{Operations Research and Cybernetics}
+
+%%%       专业
+\major{软件工程}
+\emajor{Software Engineering}
+
+%%%==================== ==========
+%%%==========   所在学院  ==========
+%%% 申请人所在二级培养单位的名称，必须填写与学校官网一致的规范名称，不可用简称。
+\college{人工智能学院}
+\ecollege{School of Artificial Intelligence}
+
+%%%==================== ==========
+%%%==========  导师姓名及职称 ==========
+%%%  填写指导教师的姓名与职称。若有两名指导教师，第一（校内）导师姓名和职称写在前面，第二（或校外）导师姓名和职称写在后面，中间空一格。第一（校内）导师必须与研究生管理系统一致。
+\advisor{邹竞辉} % 导师姓名
+\ProfessionalTitle{讲师} % 及职称
+\eadvisor{ZOU Jinhui}  %
+
+%%%==================== ==========
+%%%==========  论文完成时间 ==========
+% 填写学位论文最终定稿打印成文的年月，封面的日期用汉字书写，如二〇二四年六月、二〇二四年十二月
+\submityear{二〇二五} % 年, 用于中文封面
+\submitmonth{五}         % 月, 用于中文封面
+\submitengyear{2025}  % 年, 用于英文封面
+\submitengmonth{MAY} % 月, 用于英文封面
+\gradyear{2025}
+\gradmonth{7}
+
+\maketitle   % 生成中文封面
+
+\strut\newpage
+
+\begin{cabstract}
+  （..略..）
+\end{cabstract}
+
+%% 中文关键词, 各关键词之间用逗号隔开, 最后一个关键词不加标点.
+%% 关键词一般在3—8个之间.
+\begin{ckeywords}
+  逻辑推理素养, 高考评价体系, 圆锥曲线, 培养策略
+\end{ckeywords}
+
+\begin{center}
+  \vskip \stretch{1}
+  {
+    \begin{spacing}{1.5}
+      \songti\bf\erhao {TinyTheorem：}
+      \\ \vspace{0.18cm}
+      一个依值类型的编程语言暨定理证明器原型
+  \end{spacing} } % 论文题目
+\end{center}
+\vspace{0.68cm}
+
+\makecabstract
+
+\cleardoublepage
+
+\begin{center}
+  \vskip \stretch{1}
+  {
+    \begin{spacing}{1.68}
+      \songti\bfseries\erhao
+      TinyTheorem:
+      \\ \vspace{0.18cm}
+      A prototype for a dependently-typed
+      \\ \vspace{0.18cm}
+      programming language with theorem proving
+  \end{spacing} } % 论文题目
+  \vspace{0.68cm}
+  %\vskip \stretch{1}
+\end{center}
+
+
+\begin{eabstract}
+  (..omitted..)
+\end{eabstract}
+
+%% 英文关键词, 各关键词之间用逗号隔开. 外文关键词应与中文关键词相对应
+\begin{ekeywords}
+  logical reasoning literacy, college entrance examination evaluation system, conic curve, cultivation strategies.
+\end{ekeywords}
+\makeeabstract

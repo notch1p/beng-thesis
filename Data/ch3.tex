@@ -1,0 +1,649 @@
+\chapter{Type System of the \Tigris language}
+
+\paragraph{命名方法} 在本节内，词语“约束”有广泛运用。因为我们实现的是基于约束求解的类型检查器，广义上的“约束”可以指
+\begin{itemize}\itemsep0em
+  \item 相等约束（equality constraint），具有自反性、交换性（虽然我们只用到其一侧方向）和传递性；
+  \item 谓词约束（predicate constraint），具有累积性，主要体现在这种类型的约束是可以在类型模式中累积起来的。
+\end{itemize}
+虽然一些时候我们狭义地使用“约束”来特指含义二，
+读者应当有能力根据上下文解读其具体含义。本文更多地使用广义上的“约束”一词。
+
+简单的说，本类型系统实现称为约束变量求解实现，检查器称为约束变量求解器，在类型推断过程产生约束，
+之后通过合一化进行求解。
+
+\Tigris 实现了一个基于约束的 Hindley-Milner 类型系统，并添加了以下扩展功能：
+\paragraph{谓词} 记作 \(C\ \bar{\alpha}\)，其中 $C$ 是谓词的头部。编译器在类型推论
+阶段收集谓词信息，并在约束求解之后进行实例解析，并生成基于字典传递的实现代码。
+\paragraph{严格高阶类型} 指的是高阶的 TV 和类型构造子必须完全应用。类型表达式 AST 中的
+\texttt{KApp} 节点恰好足够实现这一功能，并使得诸如 \texttt{Functor}、\texttt{Monad} 之类的抽象（类型类）
+能够在 \Tigris 中被定义，见 \autoref{fn:HKT}.
+\paragraph{受限的 Rank-N Polymorphism} 指的是模式（\texttt{Scheme}）能够直接
+嵌入类型表达式（通过 \texttt{TSch} AST 结点），但系统本身仍然是 Rank-1 Polymorphic 的。
+这是因为我们通过 skolemization 的手段，对类型标注的检查做了精细控制。\footnote{
+  且系统的自动泛化机制永远不会产生 higher-rank 类型。
+}
+这表示当检查 \(e : \sigma\) 时，我们用 skolem 常量\footnote{
+  这些常量由 \texttt{TCon} 编码，即一个 0-元类型构造子。
+}将 \(\sigma\) 实例化，
+并检查其是否能和系统自身推断的类型合一化。不严谨但直观地说，
+\begin{itemize}
+  \item skolem TV 是刚性变量，主要表现在其独一无二，且无法同其他类型合一化；
+  \item skolem TV 在实现中是通过维护一\emph{刚性变量集}确定的。这一集合用于拒绝错误的\emph{替换法则}（substitution），
+    否则可能导致上述 skolems 逸出作用域，产生重大错误。
+\end{itemize}
+\paragraph{约束生成与求解} 约束的生成是通过类型推论进行的，且之后会在一次遍历后全部求解。求解器会返回
+一个替换法则（即\emph{解}）与残余谓词约束，这些谓词约束最终会在被泛化的类型模式中出现。
+\paragraph{Let-Polymorphism} 指的是由 Let-绑定的变量会依 TV s.t. $tv\notin\mathsf{ftv}\ \Gamma$ 被泛化，
+同时其谓词约束（如果有）则会转变为对应类型模式的上下文。
+非正式地说，表述
+\begin{center}
+  \underline{总是可以推断一个程序的类型，即便用户不提供任何签名}
+\end{center}
+是正确的，这一论断由 HM 系统的主类型特性所保证。
+
+\section{形式文法}
+
+类型系统是建构在核心代数上的：\Tigris 的核心代数是修改版的\lambdacalc。在描述这一类型系统的
+行为规范（typing discipline）之前，我们首先给出核心代数、类型项的形式文法（formal grammar）。
+\footnote{本文大多数文法，规则，都有其对应的 OTT 定义，Latex 源亦通过 OTT 生成。}
+\nonterms{expr}
+\nonterms{pattern}
+%\nonterms{patmatrix}
+%\nonterms{patbranch}
+%\nonterms{tyctor}
+%\nonterms{tyvar}
+%\nonterms{tvset}
+%\nonterms{tyargs}
+\nonterms{typeexpr}
+%\nonterms{predicate}
+\nonterms{predicates}
+\nonterms{scheme}
+\nonterms{context}
+\nonterms{constraint}
+\nonterms{constraints}
+\nonterms{subst}
+%\nonterms{evidence}
+%\nonterms{evctx}
+
+\section{判断规则与推断规则}
+
+现在，我们给出这一系统的判断规则（judgemental rules）与推断规则（inference rules）。每一条判断规则
+都附带一段关于实现的解说。
+
+\paragraph{合一化} 用于计算相等约束的一个最泛因子（most general unifier，MGU）。合一化引擎在类型检查阶段会
+\begin{itemize}\itemsep0em
+  \item 检查 TV 出现次数（occurrence）来防止无穷递归类型的产生，见小节 \ref{para:equirecursive}；
+  \item 要求类型构造子应当完全匹配；
+  \item 在两者元数相同的情况下将 \texttt{KApp} 与实际类型应用 \texttt{TApp} 合一化；
+  \item 在结构性合一化类型模式前以$\alpha$-重命名之。
+\end{itemize}
+\drules[U]{\(\theta  \rpsym{=} \, \mathsf{unify} \, \rpsym{(}  \rpnt{ty_{{\mathrm{1}}}}  \rpsym{,}  \rpnt{ty_{{\mathrm{2}}}}  \rpsym{)}\)}{Unification of types}{Refl, VarL, VarR, Arrow, Prod}
+\paragraph{约束求解} 是按从左到右的顺序进行的，这一过程会不断的累积替换法则；谓词约束也在这一阶段被收集并作为残余约束用于实例解析。
+\drules[Slv]{\(\rpsym{(}  \theta  \rpsym{,}  \bar{\pi}  \rpsym{)}  \rpsym{=} \, \mathsf{solve} \, \rpsym{(}  \rpnt{C}  \rpsym{)}\)}{Constraint solving}{Empty, Eq, Pred}
+\paragraph{实例化} 将绑定的 TV 替换为崭新（fresh）的 TV，同时返回必须满足的谓词约束。
+\drules[Inst]{\(\rpsym{(}  \rpnt{ty}  \rpsym{,}  \bar{\pi}  \rpsym{)}  \rpsym{=} \, \mathsf{inst} \, \rpsym{(}  \rpnt{sch}  \rpsym{)}\)}{Scheme instantiation}{Forall}
+\paragraph{泛化} 将所有给定环境内的非自由类型变量（quantified TV，qTV）提出，出现这些变量的谓词则会成为类型模式的上下文即
+\underline{谓词会被\emph{保留}，当且仅当该谓词包含出现在结果类型中的 qTV. }
+
+\drules[Gen]{\(\rpnt{sch}  \rpsym{=} \, \mathsf{gen} \, \rpsym{(}  \Gamma  \rpsym{,}  \rpnt{ty}  \rpsym{,}  \bar{\pi}  \rpsym{)}\)}{Generalization}{Gen}
+\paragraph{表达式类型推断} 可以生成用于约束求解的约束，并通过求解这些约束（应用这些替换法则），以确定表达式的具体类型。
+类型判断 \(\Gamma  \vdash  \rpnt{e}  \Rightarrow  \rpnt{ty}  \rpsym{;}  \rpnt{C}\) 读作:
+\begin{center}
+  \underline{
+    在（类型）环境 $\Gamma$ 下，表达式 \(\rpnt{e}\) 具备类型 \(\rpnt{ty}\)，同时生成约束 \(\rpnt{C}\).
+  }
+\end{center}
+根据核心代数，类型推断适用于：
+\textbf{变量}：在 $\Gamma$ 中寻找并结果实例化类型模式；
+\textbf{常量} 原本即有具体类型；
+\textbf{Lambda 抽象} 其参数可获得崭新的 TV；
+\textbf{函数应用} 生成能够让函数的参数类型与参数的类型相等的约束；
+\textbf{元组} 生成能够让两个元组相同部分的类型相等的约束；
+\textbf{条件表达式} 要求 then/else 分支类型相同，且要求条件为 \texttt{Bool}；
+\textbf{Let 表达式} 推断/求解/泛化右手侧\emph{之后}再推断程序体；
+\textbf{Letrec 表达式} \emph{首先}将与绑定 TV 数量相同的新 TV 推入 $\Gamma$ 内，
+再推断每一个右手侧，并产生与推断的类型相等的约束；
+\textbf{不动点组合子应用（Fix）} 即 \(\mathbf{fix}\ \lambda\ f.\ e\) 具有 \(\rpnt{e}\) 的类型；\footnote{
+  虽然前文并未提到，但不动点组合子是 \Tigris 早期加入但不再维护的一项功能。其初衷是用于教学，
+  但最后考虑实际效用便放弃维护。不动点组合子的语法是 \mintinline{ocaml}|rec expr|.
+}
+\subparagraph*{类型标注（Ascription）} 检查推断类型\emph{至少}与标注的类型具有相同的泛化程度，但根据
+类型的 rank 使用不同的方法：
+\begin{itemize}\itemsep0em
+  \item 对 rank-1 类型标注而言，我们直接合一化；
+  \item 对 rank-n 且 $n\ge 2$ 即类型模式含嵌套全称量化时，我们在类型推断与检查的四大步骤中做特殊对待：
+  \begin{enumerate}\itemsep0em
+      \item \textbf{实例化}\quad 将模式 \(\sigma = \forall \bar{\alpha}.\, \bar{\pi} \Rightarrow \tau\) 用
+        崭新的 TV \(\bar{\beta}\) 实例化，得到 \(\tau_{\mathsf{inst}}\)；
+      \item \textbf{约束求解}\quad 根据合一关系 $\tau_e \sim \tau_{\mathsf{inst}}$ 求解目前所有的约束，并得到
+        一条替换法则 $\theta'$；\footnote{
+          可以把这一步操作看作是一个\emph{过早的}求解（premature solving）。我们立即将之求解只是因为
+          需要在之后的刚性检查中使用它们。
+        }
+      \item \textbf{刚性检查}\quad 对替换法则 $\theta'$ 中的每一个绑定 $\alpha \mapsto \tau'$，
+        如果 $\alpha \in \rigid$，则 $\tau'$ 必须同 $\alpha$ 相等（注意：根据刚性变量的特征，即指其\emph{一定不能}被特殊化）。
+        若这一检测不通过，则拒绝该类型标注并抛出合一化错误；
+      \item \textbf{Skolemization}\quad 在前文与后文多次强调，用于保证标注的类型在泛性上与推断类型一致。
+    \end{enumerate}
+\end{itemize}
+\subparagraph*{模式匹配} 对于某模式矩阵中的
+\begin{itemize}\itemsep0em
+  \item 每一分支 \(i\)：模式行向量 \(p_{i,1}, \ldots, p_{i,m}\) 会同
+    被匹配对象（discriminant）的类型作比较；而 $\Gamma$ 则会由模式产生的绑定充盈，
+    此外，模式产生的 TV 则会在其自身分支内被标记为刚性。通过这些机制，我们能够保证 TV 不会逸出到其他分支。\footnote{
+      这一步操作可以看作是一个预防措施：此处所谓“逸出”只会在模式匹配枚举族类型的值时发生，而目前 \Tigris 并不支持。
+    }
+    每一分支的右手侧则会在上述过程之后推断，且要求（约束）所有分支具备相同类型。
+  \item 每一被匹配对象 \(e_j\)：是各自\emph{独立}推断的，产生类型 \(\tau_1, \ldots, \tau_m\)，
+    且这些类型必须同模式类型相同。
+\end{itemize}
+模式完全性、冗余性检查实际上在 System F 繁饰阶段进行而并非此处，因为两者需要类型信息：非完全模式产生编译器警告但并非错误；
+冗余分支则立即从矩阵中移除。
+{\allowdisplaybreaks
+\drules[I]{\(\Gamma  \vdash  \rpnt{e}  \Rightarrow  \rpnt{ty}  \rpsym{;}  \rpnt{C}\)}{Constraint-based inference}{Var, Lam, App, Prod, Fix, Let, LetRec, Cond}
+}
+\begin{mathpar}
+  \inferrule*[right=I-Match]
+  {\Gamma \vdash e_j \Rightarrow \tau_j\,;\, C_j \quad (\forall j \in 1..m) \\
+    \alpha = \fresh \\
+    \text{For}\ i \in 1..k:  \\
+    |(\bar{p}_i)| = m \\
+    \Gamma \vdash p_{i,j} \Leftarrow \tau_j \Rightarrow \Gamma_{i,j}\,;\, C_{p_{i,j}}
+    \quad (\forall j \in 1..m) \\
+    \Gamma_i = \Gamma_{i,m} \\
+    \bar{\beta}_i = \ftv(\bar{p}_i) \\
+    \mathsf{pushRigid}(\bar{\beta}_i) \\
+    \Gamma_i \vdash r_i \Rightarrow \tau_{r_i}\,;\, C_{r_i} \\
+    \mathsf{popRigid}() \\\\
+    C_{\mathsf{unify}} = \{ \tau_{r_i} \sim \alpha \mid i \in 1..k \} \\
+    C = \bigcup_{j=1}^{m} C_j \cup
+    \bigcup_{i=1}^{k} \left( \bigcup_{j=1}^{m} C_{p_{i,j}} \cup C_{r_i} \right) \cup
+    C_{\mathsf{unify}}
+  }
+  {\Gamma \vdash \mathbf{match}\; e_1, \ldots, e_m\; \mathbf{with}\;
+    \overline{\mid p_{1,1}, \ldots, p_{1,m} \to r_1}
+  \Rightarrow \alpha\,;\, C}
+
+  \inferrule*[right=I-Ascribe-Mono]
+  {\Gamma \vdash e \Rightarrow \tau_e\,;\, C_e}
+  {\Gamma \vdash (e : \tau) \Rightarrow \tau\,;\, C_e, \tau_e \sim \tau}
+
+  \inferrule*[right=I-Ascribe-Poly]
+  {\Gamma \vdash e \Rightarrow \tau_e\,;\, C_e \\
+    \sigma = \forall \bar{\alpha}.\, \bar{\pi} \Rightarrow \tau \\
+    \bar{\beta} = \fresh^{|\bar{\alpha}|} \\
+    \theta = [\bar{\alpha} \mapsto \bar{\beta}] \\
+    \tau_{\mathsf{inst}} = \theta(\tau) \\
+    %%
+    C_0 = \text{current constraints} \\
+    (\theta', \_) = \solvesf(C_0, \tau_e \sim \tau_{\mathsf{inst}}) \\
+    %%
+    \rigid = \text{current rigid set} \\
+    \forall (\alpha \mapsto \tau') \in \theta'.\;
+    \alpha \in \rigid \implies \tau' = \alpha \\
+    %%
+    \tau_{\mathsf{sk}} = \skolem(\sigma) \\
+    \text{add constraints for}\ \bar{\pi}
+  }
+  {\Gamma \vdash (e : \sigma) \Rightarrow \tau_{\mathsf{inst}}\,;\,
+  C_e, \tau_e \sim \tau_{\mathsf{inst}}}
+\end{mathpar}
+由于\underline{模式匹配语句与类型标注}在 OTT 中不易正确表达，我们手动将其表示为\footnote{
+  读者需要注意：这三条规则是手动排版的，一些符号并未在上述形式化文法中定义为生成规则，或者 OTT 源中的\emph{公式}（formula）。
+  在这种情况下，我们使用恰当的自然语言直接在行内对之作出描述、定义。笔者只能怪罪其自身，因为他运用 OTT 并不很熟练。
+}
+其中 \rref{I-Ascribe-Poly, I-Ascribe-Mono} 正对应前文类型标注推断中表述的（非）泛情况。
+\paragraph{模式} 可以绑定变量，亦可以从被匹配对象中产生新约束。判断规则
+\(\Gamma  \vdash  \rpnt{pat}  \Rightarrow  \Gamma'  \rpsym{;}  \rpnt{C}  \rpsym{;}  \rpnt{ty}\) 读作：
+\begin{center}
+  \underline{
+    模式 \(\rpnt{pat} : \rpnt{ty}\) 将 \(\Gamma\) 充盈（extend）为 \(\Gamma'\), 产生约束 \(\rpnt{C}\).
+  }
+\end{center}
+
+\drules[P]{\(\Gamma  \vdash  \rpnt{pat}  \Rightarrow  \Gamma'  \rpsym{;}  \rpnt{C}  \rpsym{;}  \rpnt{ty}\)}{Pattern inference}{Wild, Var, ConstInt, ConstStr, ConstTrue, ConstFalse, ConstUnit, Prod}
+因为构造子应用在 OTT 中不易表述，且可能存在可读性问题，仿照前文的形式，我们手动表述：
+\begin{mathpar}
+  \inferrule*[right=P-Ctor]
+  {ctor :  \sigma \in \Gamma \\
+    (\tau_{ctor}, \bar{\pi}) = \inst(\sigma) \\
+    \peel(\tau_{ctor}) = (\tau_1, \ldots, \tau_n, \tau_{\mathsf{res}}) \\
+    n = |\bar{p}| \\\\
+    \Gamma_0 = \Gamma \\
+    \Gamma_{i-1} \vdash p_i \Leftarrow \tau_i \Rightarrow \Gamma_i\,;\, C_i
+    \quad (\forall i \in 1..n) \\
+    C_{\pi} = \bar{\pi}
+  }
+  {\Gamma \vdash ctor\; p_1 \cdots p_n \Leftarrow \tau \Rightarrow \Gamma_n\,;\,
+  C_1, \ldots, C_n, C_{\pi}, \tau \sim \tau_{\mathsf{res}}}
+\end{mathpar}
+其中 \(\peel\) 用于解构由箭头类型构成的树状数据结构（类型 AST），将之划分为\emph{参数类型}与\emph{结果类型}：
+\[
+  \peel(\tau_1 \to \tau_2 \to \cdots \to \tau_n \to \tau_r) = (\tau_1, \tau_2, \ldots, \tau_n, \tau_r)
+\]
+构造子的类型模式 \(\sigma\) 是从 \(\Gamma\) 中查找的，同时将用崭新 TV 实例化之。实例化产生的谓词约束
+亦会被添加到类型环境中，保证类型类要求的正确传播。
+
+下面，我们列出上文没有充分解说的一些概念。
+
+\begin{definition}[Skolemization]
+  将 TV 替换为 skolems 的过程，skolems 不能和除自身以外的任何类型合一化。
+  \[
+    \skolem(\forall \bar{\alpha}.\, \bar{\pi} \Rightarrow \tau) =
+    [\bar{\alpha} \mapsto \overline{\mathsf{sk}_\alpha}](\tau)
+  \]
+
+  其中每一 \(\mathsf{sk}_\alpha\) 都是崭新的 skolem 常量（通过0-元类型构造子实现，
+  在实现中有形式 \texttt{?sk.\(\alpha\)}）。
+  “刚性”一词很好地表达了 skolem 的关键性质：
+  \underline{\(\mathsf{sk}_\alpha \sim \tau\) 正确，当且仅当 \(\tau = \mathsf{sk}_\alpha\).}
+\end{definition}
+
+\begin{definition}[刚性变量集合/栈 rigid set/stack]
+  \Tigris 的类型系统维护一个栈，其元素为一个个刚性变量集合
+  （注意：这些集合是 $\rigid$ 的组成部分）。
+  我们通过栈作为数据结构的特性自然地实现对嵌套作用域中的刚性变量的记录。这套系统有如下两个重要方法：
+  \begin{align*}
+    \pushRigid(\bar{\alpha}) &: \quad \rigid := \rigid \cup \bar{\alpha};\quad
+    \mathit{stack} := \bar{\alpha} ::  \mathit{stack} \\
+    \popRigid() &: \quad \mathbf{let}\; (S ::  \mathit{rest}) = \mathit{stack}\; \mathbf{in}\;
+    \rigid := \rigid \setminus S;\quad
+    \mathit{stack} := \mathit{rest}
+  \end{align*}
+  其中赋值操作 $(:=)$ 是由 \texttt{ST} 单子附带的，通过 \texttt{MonadStateOf} 接口实现。
+  \begin{property}[Invariant]
+    任一时刻，刚性变量集合 $\rigid$ 都具有以下性质：
+    \[
+      \rigid\equiv \bigcup stack
+    \]
+    即 $\rigid$ 是栈上的集合的并。在约束求解时，任一替换规则
+    \(\alpha \mapsto \tau\) 满足 \(\alpha \in \rigid\) 和 \(\tau \neq \alpha\) 都将被拒绝。
+  \end{property}
+\end{definition}
+
+\begin{remark}[求解刚性变量]
+  约束变量求解器（即合一化求解过程）在遇到刚性变量时按以下规则工作：
+  \begin{mathpar}
+    \inferrule*[right=Solve-Rigid]
+    {\alpha \in \rigid \\
+    \tau \neq \alpha}
+    {\solvesf(\alpha \sim \tau) = \mathbf{error}}
+
+    \inferrule*[right=Solve-Rigid-Ok]
+    {\alpha \in \rigid}
+    {\solvesf(\alpha \sim \alpha) = \varnothing}
+  \end{mathpar}
+\end{remark}
+
+尽管由于原生不动点组合子的存在，本系统已经存在矛盾，但只要不再使用这一已经不再被维护的功能，
+系统仍然是合理的；此外，对 HM 系统添加的扩展也日渐影响着我们的类型系统的合理性。
+本系统并不承担严谨的数学证明功能，因而“破坏合理性”从编程角度考虑，有程度之分。例如一个存在
+矛盾的系统，如果不存在爆炸原理（ex falso quodlibet, EFQ）\footnote{
+  即从矛盾能推任意命题。这一原理是类型论实现假命题（和空类型，不严谨的说，两者同构）的最简编码，其消去子：
+  \begin{mathpar}
+    \inferrule*[right=False-Elim]
+    {\Gamma\vdash p : \mathsf{False}\\ \Gamma, x : \mathsf{False}\vdash C(x) : \mathbf{Sort}\ u}
+    {\mathsf{False.rec}(p; C) : C(p)}
+
+    \text{（无计算法则）}
+  \end{mathpar}
+  空类型的消去子是空完备（vacuously total）的：不需要分情况讨论，因为\emph{此处不存在任何情况}，
+  因而，它不具备计算意义，也不能构造任何值（数据）。
+}，则不一定能造成工程上的问题（例如 Java 与 Scala 的类型系统都已证明存在矛盾，但并不
+作为能攻击它们安全性不好的理由）。
+
+下面，我们论述本系统是通过何种机制保证合理性的。
+
+\begin{property}[合理性 Soundness]
+  \Tigris 通过以下若干机制保证其类型系统的合理性：
+  \subparagraph*{Skolems} 类型检查器在遇到模式匹配和类型标注时，
+  一些 TV 会被标注刚性并由 $\rigid$（在实现中是 \texttt{rTV}）记录。
+  检查器通过拒绝将这些类型实例化到不相容（incompatible）类型的替换规则以避免不合理的泛化。
+  \subparagraph*{Rank-N skolemization} 当检查 \(\rpnt{e} : \forall \, \rpnt{tv} . \pi \Rightarrow \rpnt{ty}\) 时, 我们用崭新
+  的 skolem 常量替换 \(\rpnt{tv}\) ，以此来确保程序确实能对所有类型都工作——这一想法利用了全称量化的性质：如果表达式对任意类型都成立，
+  则将之用任意独立不可合一的 skolem 实例化时也应当成立，因为该 skolem 是随机挑选的（崭新的），所以这是表达式成立的\emph{充要条件}。换句话说，
+  如果这一检查失败，则说明表达式泛性不够强（not as generalized），与标注的类型不符合。
+  \subparagraph*{存在次数检查} 是用来禁止用户构造等式递归（equirecursive）类型，比如
+  \(\alpha \sim \alpha\to \beta\) 和 \(\alpha \sim \alpha\times\beta\)，对应非法的表达式
+  \mintinline{lean4}|fun x => x x| 或
+  \mintinline{lean4}{fun | (x, y) => x | z => z}.
+  \subparagraph*{洁净（Hygienic）泛化} 只有 $\Gamma$ 中绑定的 TV 才会被泛化。
+  谓词则根据前文描述的条件进行保留，以避免空约束。
+  \subparagraph*{语法限制} 细心的读者如果详细地阅读了第一部分的类型表达式的 BNF 文法就会发现，
+  目前的文法并不允许诸如 \((\forall a. a\to a)\to\mathsf{Int}\times \mathsf{Bool}\) 这样的 rank-2 type，
+  即便类型表达式的 AST 定义中允许内嵌模式。的确，唯一能够引入内嵌模式的方法就是通过数据类型定义的多态栏位，
+  而这一方式并不有害（在 Haskell98 中得到验证）。我们认为，这一条机制/限制是最强的，能够有效保证类型系统的合理性。
+\end{property}
+
+\begin{remark}[反例：为什么我们需要刚性变量]
+  到目前为止，“刚性”一词出现过许多次，我们亦提到过为什么需要这样的机制，但仅局限于抽象的理论表述。
+  下面提供若干反例，用具体例子展示刚性变量的必要性。
+\begin{itemize}\itemsep0em
+    \item \textbf{不正确实例化（Specialization）} 考虑
+      \begin{minted}[frame=single]{lean4}
+let id = (fun x => x : ∀a, a -> a) 1
+ -- Can't unify type Int with ?sk.a.
+let id' : ∀a, a -> a = fun x => (x : Int)
+let id'' x : ∀a, a -> a = x + 1
+      \end{minted}
+
+      例子一合法：类型标注要求 \mintinline{lean4}|fun x => x| 是多态函数。根据整个定义，
+      该函数被单态化（monomorphized）成 \texttt{Int}，相当于用户手动指导编译器
+      将之实例化；
+
+      而例子二非法：如果在函数体\emph{内} \mintinline{lean4}|fun x => ...| 内将 $a$
+      （此时其为刚性变量）实例化为 \texttt{Int}（通过类型标注 \texttt{(x : Int)}）则不合理。
+      这是因为，\texttt{id'} 由用户声明为多态函数，但其右手侧的定义则是单态函数，泛性不匹配；
+      例子三同理。
+
+    \item \textbf{泛性恢复（Polymorphism recovery）}
+      一般来说，类型类的方法（其本身就很有可能是多态函数）在程序中是直接调用的，因而，我们
+      参照 Haskell98 的特殊对待实现，在所有的方法调用处重新将之泛化。
+      但考虑边界情况，如果用户希望直接使用（但不推荐）某个字典（实例）内的方法实现
+      （\texttt{l} 是整数列表；\texttt{l'} 是字符串列表；\texttt{const} 是常函数，
+      列表作为自函子的实现方法，即此处的 \texttt{f}，是列表映射 \texttt{List.map}）：
+      \begin{minted}[frame=single]{ocaml}
+let prog (Functor f) =
+  let x = f (_ + 1) l and y = f (const ()) l'
+  in (x, y)
+      \end{minted}
+      这同样也是被 Tigris 所支持的，但允许这种写法需要归功于刚性变量机制：$a$ 与 $b$ 在
+      每次方法调用时都为刚性。这允许我们\emph{独立地}，在不同位置实例化之，比如上述例子中
+      $f$ 在 $x$ 处有实例化 \([a\mapsto \mathsf{Int}, b\mapsto\mathsf{Int}]\)；
+      在 $y$ 有实例化 \([a\mapsto \mathsf{String}, b\mapsto\mathsf{Unit}]\)：两个
+      用例互不干扰。
+  \end{itemize}
+\end{remark}
+
+\section{实例解析}
+实例解析不仅仅是将实例与对应类型类配对。准确的说，编译器需要一套标准流程（算法）来为某个类的类型
+寻找其对应实例。\footnote{
+  PL 正式表述：找到一个见证（witness，即实现）谓词约束 \(\Pred = C\;\bar{\tau}\)
+  的证据项（evidence term，即字典）。
+} 这一标准流程称为\emph{实例解析}。下文叙述的算法从实例环境中搜索匹配的实例，并在链上递归地解析谓词约束
+（例如前文出现过依赖其他实例的实例，这就产生了链）。
+
+\paragraph{实例元数据} 每个记录的实例都是一个4-元组结构：
+\[
+  I = \inmark{\iname, \cls,\bar{\alpha},\bar{\pi}_{\ctx}}
+\]
+其中
+\begin{itemize}\itemsep0em
+  \item \(\iname\) 是该实例的独特标识符（命名例：\texttt{i\_Eq\_0}）；
+  \item \(\cls\) 是类型类的头部；
+  \item \(\bar{\alpha}\) 是实例声明中的类型参数；
+  \item \(\bar{\pi}_{\ctx}\) 是实例的上下文（即依赖的其他实例）。
+\end{itemize}
+{
+  例如，实例声明 \mintinline{lean4}|instance : forall α [Eq α], Eq (List α) = ... | 产生元数据
+  \setlength{\abovedisplayskip}{6pt}
+  \[
+    I = \inmark{\texttt{i\_Eq\_1}, \texttt{Eq}, [\texttt{List}\;\alpha], [\texttt{Eq}\;\alpha]}
+  \]
+}
+
+\paragraph{实例头部合一化（Head Unification）} 指的是检查某一目标（goal）\(C\;\bar{\tau}\) 是否可以被一个实例头部
+匹配 \(C\;\bar\alpha\)。这一工作在进一步的实例解析前开展。
+
+\begin{algorithm}
+  \caption{Head Unification}
+  \begin{algorithmic}[1]
+    \Function{UnifyHead}{$\bar{\tau}_\mathsf{goal}, \bar{\alpha}_\mathsf{inst}$}
+    \If{$|\bar{\tau}_{\mathsf{goal}}| \neq |\bar{\alpha}_{\mathsf{inst}}|$}
+    \State \Return $\mathbf{error}$
+    \EndIf
+    \State $\theta \gets \varnothing$
+    \For{$i \gets 1$ \textbf{to} $|\bar{\tau}_{\mathsf{goal}}|$}
+    \State $\theta' \gets \unify(\apply(\theta, \tau_i), \apply(\theta, \alpha_i))$
+    \State $\theta \gets \theta' \circ \theta$
+    \EndFor
+    \State \Return $\theta$
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+随着类型类定义、对应实例定义的增多，需要在环境中配对实例所需的时间就越久。因而，上面的合一化检查是一种\emph{剪枝}：
+只要头部不匹配，则两者一定不能配对，则以这两者配对为目标的实例解析提前终止，编译器则继续往下寻找其他可以配对的实例。
+显然，在找到正确实例之前的所有实例解析都不会返回结果，因而我们认为在这里做剪枝操作能够产生较大的优化成效。
+
+\paragraph{实例解析算法}
+主实例解析算法维护一个\emph{访问集}（visited set，$\Visited$）来检测链上的自环，表现为
+解析结果歧义或环导致的解析不停机现象。
+
+\begin{algorithm}\caption{Instance Resolution, Part 1}
+  \begin{algorithmic}[1]
+    \Function{Resolve}{$\Gamma, \Pred, \Visited$}
+    \State \textbf{输入:} 环境 $\Gamma$，谓词 $\Pred = C\;\bar{\tau}$, 访问集 $\Visited$
+    \State \textbf{输出:} 实例标识符 $e$ 使得 $e : C\;\bar{\tau}$；或报错
+    \State
+    \If{$\Pred \in \Visited$} \label{line:cycle}
+    \State \Return $\mathbf{error}$:  ``cyclic instance resolution''
+    \EndIf
+    \State $\Visited \gets \Visited \cup \{\Pred\}$
+    \State
+    \State $\mathit{insts} \gets \Gamma.\instInfo[C]$ \Comment{类 $C$ 的所有实例}
+    \If{$\mathit{insts} = \varnothing$}
+    \State \Return $\mathbf{error}$: ``no instance for $\Pred$''
+    \EndIf
+    \algstore{instres}
+  \end{algorithmic}
+\end{algorithm}
+{\footnotesize（接上图）}
+\begin{algorithm}[H]\caption{Instance Resolution, Part 2}
+  \begin{algorithmic}
+    \algrestore{instres}
+    \State
+    \State $\mathit{found} \gets \mathbf{none}$
+    \For{\textbf{each} $I = \inmark{\iname, C, \bar{\alpha}, \bar{\pi}_{\ctx}}$ \textbf{in} $\mathit{insts}$} \label{line:search}
+    \State \textbf{try}:
+    \State \quad $\theta \gets \Call{UnifyHead}{\bar{\tau}, \bar{\alpha}}$ \label{line:unify}
+    \State \quad $\bar{\pi}'_{\ctx} \gets \apply(\theta, \bar{\pi}_{\ctx})$ \label{line:apply-ctx}
+    \State \quad \textbf{for each} $\pi' \in \bar{\pi}'_{\ctx}$ \textbf{do} \label{line:recurse}
+    \State \quad\quad $\_ \gets \Call{Resolve}{\Gamma, \pi', \Visited}$ \Comment{保证可解}
+    \State \quad \textbf{end for}
+    \State \quad $e \gets (\iname :  C\;\bar{\tau})$ \Comment{引用实例的类型标注} \label{line:evidence}
+    \State \quad \textbf{if} $\mathit{found} \neq \mathbf{none}$ \textbf{then} \label{line:ambig}
+    \State \quad\quad \Return $\mathbf{error}$:  ``ambiguous instance for $\Pred$''
+    \State \quad \textbf{end if}
+    \State \quad $\mathit{found} \gets \mathbf{some}(e)$
+    \State \textbf{catch}:  \textbf{continue} \Comment{捕捉错误，即解析失败，尝试下个实例}
+    \EndFor
+    \State
+    \If{$\mathit{found} = \mathbf{none}$}
+    \State \Return $\mathbf{error}$:  ``no matching instance for $\Pred$''
+    \EndIf
+    \State \Return $\mathit{found}$
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{remark}[$\mathsf{ResolveM}$]
+  上述算法运行在 \texttt{ResolveM} 单子中。正如之前我们提到过的类型检查器的 \texttt{InferC}
+  单子一样，这里的 \texttt{ResolveM} 定义不过是把状态变成了 \texttt{ResolveState}，
+  即上述 $\Visited$，但在实现上我们使用哈希表实现的集合 \texttt{HashSet} 作为容器储存谓词。
+  \begin{Verbatim}[numbers=left,baselinestretch=1]
+    abbrev ResolveState := Std.HashSet Pred
+    instance : MonadLift (Except TypingError) (EST TypingError σ) where
+      monadLift
+      | .error e => throw e
+      | .ok e => return e
+  \end{Verbatim}
+  同时，我们为这一单子实现 \texttt{MonadLift} 接口，以定义从错误处理单子 \texttt{Except} 到 \texttt{EST} 的\emph{自然变换}\footnote{
+    自然变换是范畴论的概念。函数式编程的定义与其在数学中类似：将一个在单子 $m$ 中运行的操作提升进 $n$ 中，有方法
+    $\mathsf{liftM} : m\ \alpha\to n\ \alpha$. 在 Lean 中，这一变换不需用户显式写出，是自动插入的；但实例本身需要用户自行定义。
+  }
+  （natural transformation），
+  将任何可能报错的纯函数（操作）提升（lift）到后者中以运行。
+\end{remark}
+
+\begin{property}
+  下面，我们给出实例解析算法的一些性质。
+  {\setlength{\parskip}{-1em}
+    \subparagraph{停机性（Termination）} 还没有被证明，从源代码定义中的 \texttt{partial} 关键字亦可看出。
+    直观的讲，实例解析停机当且仅当某一实例链是良基的，即不存在环。集合 $\Visited$（第 \ref{line:cycle} 行）虽然可以
+    检测直接的环（自环），但并不一定能够保证停机，尤其是针对一些边界情况。
+    \subparagraph{语义一致性（Semantic Consistencies）} 是通过\emph{单一匹配}原则保证的：如果有多个实例匹配一个目标（第 \ref{line:ambig} 行），
+    解析算法将抛出歧义错误。这告诉我们一个重要性质：程序的意义不会受到\underline{随机选择的实例影响，因为解析过程不随机选择实例}。
+    然而与常规实现不同，这一原则适用所有实例，与实例本身的泛性无关：也就是说，若存在多个匹配的实例，且存在其中之一最“具体”的实例
+    也不会导致其被优先选择，而是出现歧义错误，尽管优先选择它在工程意义上看起来更合理。若允许多个匹配实例的存在，
+    其中一个做法是加入优先级和默认实例，但目前我们还不支持。
+    \subparagraph{证据生成（Evidence Generation）} 指以下类型标注的实例标识符 $e = (\iname : C\;\bar{\tau})$
+    其之后在 System F IR 翻译阶段将被繁饰到字典传递风格的实现，并用字典投影结点 \texttt{Proj} 编码。
+    \subparagraph{上下文传播（Context Propagation）} 指对具有上下文谓词（依赖其他实例的实例）的实例 $\bar{\pi}_{\ctx}$
+    使用合一化产生的替换法则实例化所有的上下文谓词（第 \ref{line:apply-ctx} 行），并
+    递归地解析它们（第 \ref{line:recurse} 行）。例如
+    \mintinline{lean4}|instance ∀α [Eq α], Eq (List α) = ..| 中的 \texttt{Eq a} 即为
+    一上下文谓词（显然，很多时候上下文谓词不止一个）。
+  }
+\end{property}
+
+为了加深对算法的理解，我们用一个简单的例子模拟实例解析算法。考虑解析 $\mathsf{Eq}\;(\mathsf{List}\;\mathsf{Int})$，给定实例环境如下:
+\begin{align*}
+  I_0 = \inmark{\texttt{i\_Eq\_0}, \mathsf{Eq}, [\mathsf{Int}], \varnothing}, &&
+  I_1 = \inmark{\texttt{i\_Eq\_1}, \mathsf{Eq}, [\mathsf{List}\;\alpha], [\mathsf{Eq}\;\alpha]}.
+\end{align*}
+
+\begin{enumerate}\itemsep0em
+  \item 目标: $\mathsf{Eq}\;(\mathsf{List}\;\mathsf{Int})$
+  \item 尝试 $I_0$：$\unify(\mathsf{List}\;\mathsf{Int}, \mathsf{Int})$，失败
+  \item 尝试 $I_1$：$\unify(\mathsf{List}\;\mathsf{Int}, \mathsf{List}\;\alpha)$，由 $\theta = [\alpha \mapsto \mathsf{Int}]$ 成功
+  \item 上下文: $\apply(\theta, [\mathsf{Eq}\;\alpha]) = [\mathsf{Eq}\;\mathsf{Int}]$
+  \item 递归地解析 $\mathsf{Eq}\;\mathsf{Int}$:
+  \begin{enumerate}\itemsep0em
+      \item 尝试 $I_0$: $\unify(\mathsf{Int}, \mathsf{Int})$，由 $\theta = \varnothing$ 成功
+      \item Return $(\texttt{i\_Eq\_0} : \mathsf{Eq}\;\mathsf{Int})$
+      \item 上下文: $\varnothing$，为空则不再需要递归
+    \end{enumerate}
+  \item 返回 $(\texttt{i\_Eq\_1} :  \mathsf{Eq}\;(\mathsf{List}\;\mathsf{Int}))$
+\end{enumerate}
+
+\begin{remark}[与 GHC 的比较]
+  类型类由 P. Wadler 提出，并最先应用于 Haskell 语言。作为其最流行的实现，
+  GHC 实现了一个健壮性（robust）更强，更加复杂，且具备语言标准中未提及的许多扩展的类型类机制。虽然 \Tigris 类型类的实现从
+  GHC 学习、汲取了诸多灵感，但必须承认相比于后者，前者的实例解析策略要简单得多：
+\begin{itemize}\itemsep0em
+    \item \Tigris 不允许重叠实例，无论这些实例在源代码中出现的先后顺序；GHC 则提供一套实例优先级机制，
+      允许用户针对实例解析做高细粒度的控制。
+    \item 此外，\Tigris 不允许针对实例设置后备（fallback）实例。
+  \end{itemize}
+  但是，若和 Haskell98 或 2010 做比较，
+  \Tigris 的实例声明在一些地方反而更具表达性：譬如我们部分实现了 GHC 语言扩展 \texttt{FlexibleContext}\footnote{
+    这一扩展解除了 Haskell98 的限制，不再要求谓词约束必须具有 \texttt{class type-variable} 或
+    \texttt{class (type-variable type1 type2 .. typen)} 的形式。
+  }，因而可以定义一些形式不同的实例，例如\mintinline{lean4}|instance ∀a [Eq a], Eq (a * a) = ..|. 此外，多类型参数
+  的类型类亦支持，比如前文曾出现过的 \texttt{HAdd} 和 \texttt{HEq} 的例子。
+\end{remark}
+
+\section{System F 繁饰}
+带类型的语法树（typed syntax）\texttt{TExpr}，在经历实例解析的同时，也正在被繁饰到 \texttt{FExpr}.
+下面就这一过程进行直观的探讨。在这一部分我们侧重谈实现，更多的使用“字典”一词表示某接口（类）的实现。
+首先给出繁饰的具体行为：
+
+给定一模式
+\[
+  \forall \alpha_1 \cdots \alpha_n [P_1, \dots, P_k], \tau
+\]
+我们将一个绑定的右手侧翻译为
+\begin{equation}
+  \Lambda \alpha_1,\dots,\alpha_n.\lambda d_1,\dots,d_k.\ body
+\end{equation}
+其中 $d_1,\dots,d_k$ 是谓词 $P_1,\dots,P_k$ 对应的实例。若右手侧已经由正好 $k$ 个字典 lambda
+（即绑定字典的 lambda 抽象）起头，且这些字典 lambda 是编译器自动为类型类方法生成的封装，则这种情况下
+只在头部添加 \texttt{TyLams}.
+每当繁饰过程遇到一个 \texttt{Var} 结点 $\mathsf{Var}\ x:\sigma$ 其中 $\sigma = \forall \bar{\alpha}\ \bar{P},\, tbody$
+时，会繁饰为
+\begin{equation}
+  \begin{split}
+    &\Tyapp\ \cdots\ (\Tyapp\ (\FVar\ x\ ty_\mathsf{mono})\ \alpha_1)\ \cdots\ \alpha_n\\
+    &\mathsf{App}\ \cdots\ d_1\\
+    &\vdots\\
+    &\mathsf{App}\ \cdots\ d_k
+  \end{split}
+\end{equation}
+
+字典参数\footnote{标识符为 $\mathtt{d}\texttt{\_}P\mathtt{.cls}\texttt{\_}{i}$，其中 $P$ 是谓词, $i$ 是
+该类型类的实例计数器；若这一字典参数是持久化的，则在其之前加字符 \texttt{r}.}是以下两种情况之一
+\begin{itemize}\itemsep0em
+  \item 存在于作用域内，也就是说，与某一由上述字典 lambda 产生的谓词模板相匹配；或，
+  \item 由实例解析过程合成（synthesized），产生一个不带类型的表达式（\texttt{Expr}）。
+    我们在该表达式上重新做类型推断与字典繁饰，以转变为 \texttt{FExpr}. 这一过程显然是递归的。
+\end{itemize}
+
+若某一方法具有多态类型，例如 \texttt{Functor} 的 \texttt{map}，或者从实现上说，\texttt{TSch (Forall as [] τ)}，
+则其将被\emph{实化}（reified）到 System F 的类型抽象（type abstraction，即 type lambda），这一转变是通过将其所有的
+$\forall$ binder 一一包裹在 \texttt{TyLam} 结点中而达成的。对于以后计划实现 Higer-Ranked 类型时同理。但需要注意，
+各方法独自的谓词上下文（例如，\texttt{map} 方法依赖某一接口）目前还不支持，且若出现则会抛出错误。
+
+\paragraph{字典持久化} 指的是将合成的字典持久化的优化。实践证明，绝大多数情况下同一字典
+都在代码中使用多次，如果每次使用都需要重新合成相同的字典，或生成\underline{字典间的应用}（如果实例具备上下文），
+则编译效率就比较低下。持久化通过在函数层级记录每个字典的第一次使用，在遇到同一字典多次使用时，重复使用第一次合成的字典，来提高性能。
+而语言自带的 Let-绑定正为这一优化铺平了道路：我们在函数头部插入一个 Let-绑定，将所有行内使用到的字典提出（hoist）并用 Let 绑定之。
+从语义上讲，字典持久化类似\emph{公共子表达式消除}（common subexpression elimination），只不过字典是很特定的语言对象，因而使得
+优化实现起来简单。我们用一个稍复杂的例子（简单例子不需优化） \texttt{Functor}、 \texttt{Applicative}、\texttt{Monad}
+作为代数结构的继承关系来展示这个优化：
+\begin{minted}[frame=single]{lean4}
+class Applicative (f : 1) =
+  { pure : ∀ a, a -> f a
+  , seq : ∀a b, f (a -> b) -> f a -> f b}
+class Monad (m : 1) =
+  { bind : ∀a b, m a -> (a -> m b) -> m b
+  , return : ∀a, a -> m a}
+infixl 55 ">>=" => bind ;; infixr 60 "<*>" => seq
+instance ∀(m : 1) [Monad m], Applicative m =
+  { pure = return
+  , seq f x = f >>= fun f => x >>= fun x => return $ f x}
+instance ∀(f : 1) [Applicative f], Functor f = {map f x = pure f <*> x}
+instance Monad Option =
+  {return = Some, bind | None, _ => None | Some x, f => f x}
+let seqOp = (Some id <*> _)
+\end{minted}
+已知 \texttt{i\_Monad\_0, i\_Applicative\_0} 分别是 \texttt{Option} 作为 \texttt{Monad}、
+\texttt{Monad} 作为 \texttt{Applicative} 的实例，则有 IR 结果
+
+\begin{minted}[ignorelexererrors=true]{ocaml}
+let seqOp : ∀ α, (Unit → Option α) → Option α =
+  let rd_Applicative_1 : Applicative Option =
+    let rd_Monad_0 : Monad Option = i_Monad_0
+    in i_Applicative_0@Option rd_Monad_0
+  in (Λ α. rd_Applicative_1[1, seq]@Option (Some@(α → α) id@α))
+\end{minted}
+
+如上所示，持久化优化被触发，两个字典及其应用，都通过 Let 缓存（cached）于函数头部，且
+绑定的标识符为 \texttt{rd\_Applicative\_1}. 注意到其计数器为 $1$，这说明持久化优化在机制上
+会合成新的字典（但效率远高于正常合成步骤）。所以我们认为，在繁饰过程中加入这个优化，实现简单
+且十分实用，能够切实提高编译性能。
+
+繁饰过程运行在 $\mathsf{F}$ 单子中。这一单子与前面提到的单子相似，但包含繁饰需要的特定状态类型。
+但不同于以往，$\mathsf{F}$ 基于 \texttt{EStateM}，一个自带错误处理与（用纯函数模拟的）的可变状态的单子，
+而非之前真正具备（线程独立的）可变状态的 \texttt{ST}. 这样设计，是因为繁饰过程涉及到许多\emph{本地状态}，
+搭配递归调用，我们不必次次修改可变状态，而是在调用处传入这一调用所需的本地状态即可，这
+在底层是通过栈分配的函数参数实现的。
+
+如同之前的抽象语法树，System F IR 也使用类 Wadler 的 pretty printing 算法，方便 debug 和
+教学使用。
+
+我们以笔者对这一模块设计上的考量与反思总结本部分。
+\begin{remark}[System F IR 的实用性与设计上的反思]
+  自本课题开题伊始，笔者本人对 \Tigris 的目标便十分明确：编译到 Common Lisp. LISP 是
+  动态类型语言，而最流行的 SBCL 实现则自带一些类型推断（但大概率不是 gradual typing）、传播的扩展功能，
+  因而我们做\emph{泛型特殊化}、或将类型传播到下一个降级阶段（即下文的 Lambda IR 降级）的理由不是很充分。\footnote{
+    虽然之后的编程实践证明，带着类型走完全部编译流程是极方便的，且更加可靠。
+  }
+
+  因为这些考量，我们其实并不需要上文的 System F IR，因为没有它类型类繁饰也能实现，但最终仍然保留了这一 IR.
+  笔者需要承认，这里既有一些设计上的前瞻性，也有设计失误、考虑不够充分的问题：
+\begin{itemize}\itemsep0em
+    \item 前者表现在若我们之后需要实现 arbitrary rank polymorphism 和 inductive families 时很自然：可以由当前的 IR 编码。
+    \item 后者表现在下文的 Lambda IR 中。在设计 Lambda IR 时我们没有考虑将 System F IR 的类型信息携带到下一层级，因而
+      Lambda IR 不带类型信息，直接导致后端代码生成时的附加困难，更使得后端实现的健壮性成疑。目前的后端会通过收集
+      变量的\emph{形状}来产生代码，但这并不可靠，且存在一些笔者临时修补的错误。不仅如此，若后期我们需要添加静态类型语言后端，
+      比如 C，这一 IR 就几乎不可用。
+  \end{itemize}
+  虽然此处的问题和 System F IR 联系不深，但优点抑或缺陷，都向我们揭示了
+  一个宝贵的教训：
+  \begin{center}
+    \underline{在任意编译阶段，都应当具备携带类型的 IR.}
+  \end{center}
+\end{remark}
+
+\section{本章小结}（略）

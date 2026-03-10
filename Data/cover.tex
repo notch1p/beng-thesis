@@ -101,13 +101,31 @@
 \strut\newpage
 
 \begin{cabstract}
-  （..略..）
+  随着函数式前端框架 React 等的兴起、大语言模型被用于自动定理证明，
+  编程语言理论与相关领域类型论（Type Theory）重新进入人们的视野。
+  然而因其理论程度高、对学生纯数学水平要求高的特点，
+  推广程序语言、类型论教育与程序语言学界所倡导的编程实践仍然是一项挑战。\\
+  \indent 本文旨在探索一种同时面向工程化程序开发与形式化验证的语言与编译工具链原型，
+  获得编译器产出（编程子系统）与定理证明器（证明子系统）以成为教学、实验与工程验证的良好平台。
+  借助“解耦”思路，两个子系统以分离式架构并行推进：
+  编程子系统坚持相对弱的表达力与可编译性；证明子系统把依赖类型的强大表达力局限在更小而可控的内核上，
+  从而避免将全依赖类型的复杂度与心智负担强加于用户的日常开发环节。本文提供一体化但解耦的“语言 + 证明”原型，
+  既便于教学与课程项目落地，也为进一步研究（如更强的多态、约束求解、证明自动化）提供坚实基础与统一框架。\\
+  \indent 本文作者基于谓词扩展的
+  Hindley-Milner（HM）类型系统与依赖类型论，在程序语言实践层面继承并扩展 HM 的工程优势，
+  通过在工程化实践与更强语言表达力之间进行取舍，
+  创新性地设计出可控的高阶多态、蕴含的谓词约束、
+  严格的高阶类型等语言（类型系统）特性，系统化提升可读、可维护的中型编译器构建能力。
+  在定理证明器方面设计了简化的依赖类型内核，
+  以精简版的依赖类型 \lambdacalc 为计算模型，并采用双向类型检查，
+  在单一、蕴含的类型宇宙下实现了
+  归纳类型定义、被匹配对象的精练（discriminant refinement），提升了类型论（语言）表达力。
 \end{cabstract}
 
 %% 中文关键词, 各关键词之间用逗号隔开, 最后一个关键词不加标点.
 %% 关键词一般在3—8个之间.
 \begin{ckeywords}
-  逻辑推理素养, 高考评价体系, 圆锥曲线, 培养策略
+  程序语言，类型论，定理证明，编译器
 \end{ckeywords}
 
 \begin{center}
@@ -140,13 +158,28 @@
   %\vskip \stretch{1}
 \end{center}
 
-
 \begin{eabstract}
-  (..omitted..)
+  With the rise of dominant functional frontends such as React and the use of
+  large language models in automated theorem proving, programming language theory, type theory
+  is now more popular than ever. However, because of its theoretical nature and
+  demands on pure mathematics, the push
+  for higher education and academic programming practices remains a challenge.\\
+  \indent We propose a language and toolchain prototype that aims at industrial programming while simultaneously being
+  theorem proving-oriented, by obtaining a compiler (programming subsystem) and a prover (proving \textasciitilde) to
+  deliver a solid platform for teaching, experimentation, and engineering validation.
+  By adopting a decoupling approach, we develop the two subsystems in parallel: the former
+  remains relatively weak expressiveness-wise whereas the latter constrains the dependently-typed system in a
+  smaller yet maintainable kernel to avoid forcing full dependent type theory on the programmer. This integerated prototype
+  of ``language + proofs'' is suitable for curriculum projects
+  while providing a solid, unified framework for further research.\\
+  \indent On the programming side, we found a balance between engineering and expressiveness by extending
+  the Hindley-Milner type system while creatively implemented facilities such as fine-grained higher-ranked polymorphism and
+  strict higher-kinded types whereas for the other side, we designed a simplified dependently-typed kernel with bidirectional
+  typechecker that achieved inductive type definition and discriminant refinement under single impredicative type universe.
 \end{eabstract}
 
 %% 英文关键词, 各关键词之间用逗号隔开. 外文关键词应与中文关键词相对应
 \begin{ekeywords}
-  logical reasoning literacy, college entrance examination evaluation system, conic curve, cultivation strategies.
+  programming language, type theory, theorem prover, compiler
 \end{ekeywords}
 \makeeabstract

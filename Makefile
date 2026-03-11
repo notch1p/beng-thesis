@@ -44,8 +44,10 @@ OTTFLAGS	= -signal_parse_errors true \
 
 # implied bibtex
 main:
-	latexmk -xelatex main.tex
+	latexmk -xelatex -bibtex -f main.tex
+
+default: main
 
 clean:
-	-rm -v *.aux *.log *.toc *.ind *.gls *.glo *.idx *.ilg *.out *.bbl *.thm *.blg *.lot *.lof *~
+	latexmk -c main.tex
 #

@@ -7,7 +7,6 @@
 %%% 学术学位格式自动满足  华南师范大学数学科学学院 2024 年 11月颁布年颁布的 研究生学位论文撰写规范（适用学科：0701数学）！！
 %%% 博士还是硕士, 需要将在 1Cover.tex 中输入.
 \usepackage{xeCJK}
-
 \usepackage{Style/scnumacro}
 \usepackage{Style/listproc}
 \usepackage{Style/ottalt}
@@ -15,6 +14,8 @@
 \usepackage{graphicx}
 \usepackage{quiver}
 \setmonofont{Victor Mono}[Scale=.9]
+\setCJKfamilyfont{jarm}{Yu Mincho}
+\newcommand\ja{\CJKfamily{jarm}\CJKnospace}
 \makeatletter
 \renewcommand*\verbatim@nolig@list{}
 \makeatother
@@ -110,8 +111,7 @@ citecolor=black,}
 %\thispagestyle{empty}
 %\null
 \include{Data/ch6}
-\chapter{总结与展望}
-（..略..）
+\include{Data/ch7}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,8 +120,8 @@ citecolor=black,}
 %%% 停止正文中页眉!
 \renewcommand{\headrulewidth}{0pt}
 %%%=============   参  考  文  献   =============%%%
-
-\bibliographystyle{Style/SCNUbib}
+\nocite{*} 
+\bibliographystyle{gbt7714-numerical}
 \cleardoublepage
 %\phantomsection
 
@@ -142,7 +142,7 @@ citecolor=black,}
 
 \let\cleardoublepage\clearpage
 
-\appendix
+%\appendix
 %%%=============　　　附　　　录　　　=============%%%
 %%%(六) 附录
 %%%  附录一般作为学位论文主体的补充项目, 主要包括, 供读者阅读的、不宜放在正中的、过分冗长的调查问卷、访谈提纲、量表、计算程序、统计推导等.附录要有编号编于正文后, 其页码与正文连续编排.
@@ -152,6 +152,9 @@ citecolor=black,}
 
 %%%=============　   　　致             谢　   　　=============%%%
 %%%(八) 后记, 一般为致谢.
+\newpage
+\thispagestyle{empty}
+\null
 \include{Data/ack}
 
 %%% ===============================

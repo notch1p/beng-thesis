@@ -121,7 +121,7 @@ $\mathsf{Y}$ 组合子的 Church 实现若不加更改，在 CBV 下\emph{不会
 在函数实际要使用传入的参数时需要首先将其投影出来。这一变换通常与闭包转换一起进行，我们在下文介绍。
 
 {\bf 栈底层降级工作} CPS 风格的递归代码在降级过程中是经常使用的，而递归的首要工作就是明确基准情况（base case）——续点栈（continuation stack）底层的
-降级工作 \texttt{lowerFCore} 所表示的就是这一情况。\texttt{lowerFCore} 可以看作和 IR 中的 \texttt{Tail} 存在\emph{同像性}（homoiconicity），因为
+降级工作 \texttt{lowerFCore} 所表示的就是这一情况。\texttt{lowerFCore} 可以看作和 IR 中的 \texttt{Tail} 存在\emph{同像性}（homoiconicity）\footnote{确切的说，和第二部分提到的 \texttt{chainl/chainr} 的一致，这也是一种\emph{同态}。}，因为
 从降级工作的角度，或是 IR（即 object language，数理逻辑上的\emph{对象语言}）的角度而言，两者都代表尾调用——\underline{\texttt{lowerFCore} 本身也用于 \texttt{Tail} 的降级}。
 \begin{Verbatim}[commandchars=\\\{\},codes={\catcode`$=3},numbers=left,baselinestretch=1]
 def lowerFCore (e : FExpr) (ρ : Env) (ctors : HashMap String Nat) : M σ LExpr :=
@@ -372,7 +372,7 @@ and odd
       \arrow["{\text{plugging}}", from=1-2, to=3-2]
       \arrow["{\text{lowering}}"', from=1-4, to=3-4]
   \end{tikzcd}\]
-  \caption{CPS 化在元语言与对象语言间的同像性}\label{fig:cps-homoicon}
+  \caption{CPS 化在元语言与对象语言间的同态}\label{fig:cps-homoicon}
 \end{figure}
 
 挖出的“空” $(\bullet)$ 应当（若有意义）在 $e$ 中有引用。我们称之“挖空”，是因为如同
@@ -380,7 +380,7 @@ and odd
 \underline{并返回\emph{剩余}表达式，即该点往后的程序}；图 \ref{fig:cps-homoicon} 形象地展示了这个性质。
 从这个意义上讲，续点可以看作是一个程序的\emph{模板}。从实现的角度考虑，这不过是在显式的 CPS 栈\footnote{CPS 栈本身既存在于元语言（实现），亦存在于对象语言（\Tigris）}中运行单子 $M$ 下的操作而已——
 CPS 栈是我们显式维护的，本质上是由许多用于降级工作的小续点（续点在编程语言中基本使用函数编码，除非原生支持）\emph{复合}而成的大闭包；
-使用 CPS 风格实现递归，根据上述的同像性我们能够轻易地将变量名从元语言（即 Lean）传播到对象语言（即 IR）中。
+使用 CPS 风格实现递归，根据上述同态我们能够轻易地将变量名从元语言（即 Lean）传播到对象语言（即 IR）中。
 
 \paragraph{增量式 API 与 \emph{Tigrisi} IR 解释器} 是本项目编程子系统的一个试验性扩展。
 虽然 \Tigris 的编译器 \texttt{tigrisl} 能一遍直接完成从源代码到可执行程序的产生，这样的编译管线却

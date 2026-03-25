@@ -595,12 +595,18 @@ let f | (x, _) => x | (_, y) => y -- redundant alternatives at 3) (_, y)
 是通过以下几种运算符声明语句获取的：
 \begin{definition}[运算符声明]由以下 BNF 给定
 \begin{minted}{bnf}
-<infixl-decl> ::= infixl ":"? <op> <prec> ARROW <expr>  ; => (<op>, <prec>, L, <expr>)
-<infixr-decl> ::= infixr ":"? <op> <prec> ARROW <expr>  ; => (<op>, <prec>, R, <expr>)
-<prefix-decl> ::= prefix ":"? <op> <prec> ARROW <expr>  ; => (<op>, <prec>, <expr>)
-<postfix-decl>::= postfix ":"? <op> <prec> ARROW <expr> ; => (<op>, <prec>, <expr>)
+<infixl-decl> ::= infixl  ":"? <op> <prec> (ARROW <expr>)?
+<infixr-decl> ::= infixr  ":"? <op> <prec> (ARROW <expr>)?
+<prefix-decl> ::= prefix  ":"? <op> <prec> (ARROW <expr>)?
+<postfix-decl>::= postfix ":"? <op> <prec> (ARROW <expr>)?
 \end{minted}
-  其中 \texttt{<op>} 表示运算符对应的字符串，且为 \texttt{<strlit>} 的子集。
+  其中 \texttt{<op>} 表示运算符对应的字符串，且为 \texttt{<strlit>} 的子集；
+  以供 \texttt{chainl/chainr} 组合子使用。
+  $impl$ 对应元语言（Lean）中经 $\eta$-变换的 \texttt{<expr>}，类型 $\mathsf{Expr}\to\mathsf{Expr}\to\mathsf{Expr}$\footnote{
+    熟悉代数的读者马上知道，这里的 $impl$（譬如 \texttt{App : Expr -> Expr -> Expr} 结点）与对象语言（\Tigris）中的二元运算符、
+    函数应用语法\emph{同态}（即两者在这一映射下结构不变），由同态射 $\mathsf{chainl/r_p}(impl)$ 给定。
+    换句话说，\underline{\Tigris 中的所有二元运算符或函数应用，在实现中都有对应的 $impl$ 以替换之}。
+  }。
 \end{definition}
 \begin{definition}[运算符字符串候选 Operator candidate strings]
   与 Haskell 或 OCaml 从给定的一个集合内选取可用运算符字符串不同，类似 Lean，\Tigris 将 \texttt{<op>} 定义为\emph{任意字符串}，
@@ -657,6 +663,22 @@ postfix 65 "!" => fact ;; prefix 65 "!" => not ;; (50!, !true)
 infixr 67 " :: " => Cons
 let car (x :: _) = x ;; let cdr (_ :: xs) = xs
 \end{minted}
+\subparagraph{由运算符扩展的 Let-绑定}
+根据运算符定义的语法，我们会发现其右手侧并非必须：虽然本文将\emph{声明}、\emph{定义}混用，
+仅在此处做一小区分：\underline{声明不包含右手侧}。在上面给出的样例之外，\Tigris 还支持 Haskell 风格的由 Let 直接绑定的运算符定义语法：
+\begin{minted}[frame=single]{ocaml}
+let Some x #+# Some y = Some $ x #+# y
+let rec xs === ys =
+  match xs, ys with
+  | x :: xs, y :: ys => x = y && xs === ys
+  | _, _ => false
+\end{minted}
+
+扩展的 Let-绑定能够在其左手侧接受二元运算符的应用的形式，而算符两侧则可以接受模式。
+通过这种形式定义的运算符不一定需要运算符声明，默认优先级 50，左结合。
+这一模式除了形式上更加自然，最重要的优势在于其搭配 Let-表达式，
+可以允许用户局部地、快捷地使用暂时定义的运算符，而不必在顶层写大量的运算符声明。
+从上面的例子还可知道这种 Let-绑定亦支持递归定义。在目标代码生成中，运算符 \texttt{op} 有形式 \texttt{«op»}.
 
 \paragraph{外部声明} 利用了 \Tigris 的 FFI 功能来声明外部函数，“外部”即这些标识符所
 绑定的值的定义对编译器不可见，因为其并非在本语言内部定义的。

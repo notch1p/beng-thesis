@@ -42,11 +42,13 @@ OTTFLAGS	= -signal_parse_errors true \
 		exit 1; \
 	fi >&2
 
+.PHONY: default clean
+
 # implied bibtex
-main:
+main.pdf:
 	latexmk -xelatex -bibtex -f main.tex
 
-default: main
+default: main.pdf
 
 clean:
 	latexmk -c main.tex

@@ -145,11 +145,12 @@ let (x, y) = ({x = 1, y = 2}, {x = 1, y = 2, z = 3})
 
 \paragraph*{类型变量}\label{fn:HKT} 亦称 TV（type variables），是小写字母开头的标识符。类型变量的\emph{类型}，
 即\emph{类型的类型}（kind）是由用户显式提供的，因为目前我们并未实现 TV 的类型推断（kind inference）。
-一个记作 \((\alpha : n)\) 的 TV 有类型 \(\mathbf{Type}\to \mathbf{Type}\)，否则默认为 $\mathbf{Type}$.
+一个记作 \((\alpha : n)\) 的 TV 有类型 \(\mathbf{Type}\overbrace{\to\cdots\to}^{n\text{ 个 }\to}\mathbf{Type}\)，否则默认为 $\mathbf{Type}$.
 但因目前我们不允许柯里化的高阶类型存在，\((\alpha : 2)\) 实际上是 \(\mathbf{Type}\times\mathbf{Type}\to\mathbf{Type}\).
 因而在称谓上，我们应当使用\emph{元数}（arity）一词而非 kind. 在数据类型定义中，TV 必须是被约束（bound）的，其约束位置可以是
 类型构造子的参数位置，或是右手侧的全称量词 $\forall$（forall）中。
-读者应当注意到，类型表达式的合法性检查（validity checking）基本在句法分析阶段完成，也就是说，若存在某一 TV 是自由变量（free variable），
+类型表达式的合法性检查（validity checking）基本在句法分析阶段完成——也就是说，
+若存在某一 TV 是自由变量（free variable），
 编译器会抛出句法分析错误。在用户接触到的 TV 外，实现中编译器还存在以下两种特殊含义的 TV：
 
 {\setlength{\parskip}{-1em}
@@ -164,7 +165,7 @@ let (x, y) = ({x = 1, y = 2}, {x = 1, y = 2, z = 3})
   }
   中出现。
 
-  \subparagraph{Skolem TV}\footnote{纪念挪威数学家 Thoralf Skolem，主要研究数理逻辑与集合论。} 亦称 skolems，记作 \texttt{?sk.a} 其中 \texttt{a} 指代
+  \subparagraph{Skolem TV} 亦称 skolems，记作 \texttt{?sk.a} 其中 \texttt{a} 指代
   原始 TV。Skolems 由 skolemization 过程产生，这些 TV 实际上由类型构造子编码\footnote{在实现中，我们用 \texttt{TCon} 编码，避免错误的合一化。}，并且\emph{绝对不}应被实例化。这使得类型检查器能够查出更多的类型错误，考虑
 }
 \begin{minted}[escapeinside=\%\%,frame=single]{lean4}
@@ -191,7 +192,7 @@ Skolems 所具有的特殊性质称为\emph{刚性}（rigid），在后文我们
   \paragraph*{不定递归类型}\label{para:equirecursive} 会被类型检查器拒绝，因此
   类型检查器无法推断诸如程序 \mintinline{ocaml}|fun x -> x x| 的类型，且一个特殊的错误信息会被抛出。
   这是为了提高类型系统的合理性，因为不定递归类型的方程式无解，或者说其解是一个无限增长的树形结构。
-  允许这种类型的存在，就可以构造不动点组合子（fixpoint combinator），其中又以 \texttt{Y} 组合子最为著名（以下是其中一种实现）：
+  允许其存在，即可构造不动点组合子（fixpoint combinator），其中又以 \texttt{Y} 组合子最为著名（其中一种实现）：
   \begin{equation}
     \mathsf{Y}\ f = f\ (\mathsf{Y}\ f) : \forall \alpha.\;(\alpha\to\alpha)\to\alpha,
   \end{equation}
@@ -409,9 +410,9 @@ let getMap (Functor f) = f
   并行\footnote{理论上的（在类型检查器中）；实际行为取决于后端。Cf. 嵌套 Let.}求出 \(e_1\cdots e_n\) 并将结果与模式 \(p_1\cdots p_n\) 作匹配，
   若全部成功，则在由上述模式匹配中产生的绑定\emph{充盈}的词法作用域中求 $e$，并以该值作为整个 Let-表达式的返回值。\footnote{
     读者应当注意，绑定是并行进行的。绑定到 \(e_{i}\) 的标识符一定在 \(e_{i+1}\) 中\emph{无定义}。
-  }在实现上，这样的 Let 绑定会直接被翻译为基本语法构造 \mintinline{ocaml}|match .. with|.
+  }在实现上会直接被翻译为基本语法构造 \mintinline{ocaml}|match .. with|.
   上述的最简 Let-绑定形式可以用于直接绑定（或者在传统意义上，定义）函数形式的值，但 \Tigris 也提供了语法糖用于定义函数。
-  在一个 Let-表达式中，函数可以通过 \(\mathbf{let}\ f\ p_1\cdots p_n = e\)、模式矩阵（pattern matrices）式的 \(\mathbf{let}\ f\mid p_{i,j}\Rightarrow e\) ，或这两种
+  在一个 Let-表达式中，可以通过 \(\mathbf{let}\ f\ p_1\cdots p_n = e\)、模式矩阵（pattern matrices）式的 \(\mathbf{let}\ f\mid p_{i,j}\Rightarrow e\) ，或这两种
   形式的混合 \(\mathbf{let}\ f\ \overline{p}\;\overline{\mid \overline{p}\Rightarrow e}\)\footnote{
     回忆：在某一对象上加横线表示\emph{一系列}这样的对象。
   }
@@ -430,15 +431,14 @@ in  add20 . minus30 $ 50
 \begin{Verbatim}[baselinestretch=1]
 [WARN] Partial pattern matching, possible cases such as [false] are ignored
 \end{Verbatim}
-这说明类型检查器能够检查某个模式是否匹配全面（exhaustive）。这是显然的，对于一个
-匹配不全面的模式，如果右手侧出现了无法匹配的值，匹配失败，程序在该点的行为即是未定义的。
-我们规定，如果 runtime system 在运行期检测到匹配失败，将通过 Common Lisp 的条件系统
-（condition system）抛出一个低级错误，以上面的例子为例，运行期系统会抛出无法
-恢复（nonrecoverable）的 \texttt{MATCH-FAILURE}
+这说明类型检查器能够检查某个模式是否匹配全面（exhaustive）。显然，对一个匹配不全面的模式，
+如果右手侧出现了无法匹配的值而匹配失败，程序在该点的行为即是未定义的。
+实现上，如果运行期匹配失败，将通过 Common Lisp 的条件系统
+（condition system）抛出一个底层错误——无法恢复（nonrecoverable）的 \texttt{MATCH-FAILURE}
 错误，由 LISP debugger 中止正在运行的程序，等待用户输入。
 
 {\setlength{\parskip}{-1em}
-  \subparagraph{本地递归定义} 通过 Letrec 语法构造引入：
+  \subparagraph{本地递归定义} 通过 Letrec 语法构造引入（模式矩阵式的语法仍然可用）：
   \begin{equation}
     \mathbf{let\ rec}\ f_1\ p_1\cdots p_n = e_1\
     \mathbf{and}\cdots \mathbf{and}\ g\cdots = e_n\
@@ -496,7 +496,7 @@ let rec x = (1, y) and y = 1
 成为需要更精确的 Letrec-绑定限制的理由。
 
 {\setlength{\parskip}{-1em}\subparagraph*{全局定义} 与本地定义几乎一致，但如其名，仅限于顶层（toplevel）。
-  顶层的 Let(rec)-表达式不必再拥有其程序体，因而退化为一个独立的定义。多个
+  顶层的 Let(rec)-表达式不必再拥有其程序体（即没有 \mintinline{ocaml}{in ..} 从句），退化为一个独立的定义。多个
   顶层 Let 可以有选择的用 \texttt{;;} 作分隔，提高可读性。
 
   \subparagraph*{类型推论与泛化} 发生在许多地方。之所以放在 Let 的小标题下，是因为 HM 的自动泛化
@@ -506,8 +506,8 @@ let rec x = (1, y) and y = 1
 与其他一样具有类型推论的语言不同，得益于类型系统的小心设计，\Tigris 具有全局类型推断，这使得类型检查器
 能够从零类型标注（字面义）推断整个程序的类型。具体来说，这是因为我们的类型系统具有主类型（principal types），
 即能够推断\emph{最泛化}的类型的能力。换句话说，从 Python/Ruby/Perl 或
-任何一个不需要类型标注的动态语言迁移过来的用户都能保持他们不写类型标注的习惯（只是语法上），
-但同时又能享受到静态类型带来的程序安全保障。
+任何不需类型标注的动态语言迁移过来的用户都能保持不写类型标注的习惯（仅语法上），
+同时享受静态类型带来的安全保障。
 
 \begin{figure}[H]\centering
   \begin{subfigure}{0.6\textwidth}\centering
@@ -538,10 +538,10 @@ let sns = map toString $ 1 :: 2 :: Nil
 \end{figure}
 
 泛化的对象是类型模式（scheme）且发生在 Let-绑定处。泛化与类型推论是一起工作的，与其他语言需要利用特殊语法构造
-实现多态不同，\Tigris 充分利用自动泛化机制，保证“能泛化的程序\emph{一定}会被自动泛化且无需类型标注”这一性质。
+实现多态不同，\Tigris 充分利用自动泛化机制，保证“\underline{能泛化的程序\emph{一定}会被自动泛化且无需类型标注}”这一性质。
 
-搭配这两个不同于一般语言的特性，在进行函数式编程实践时，与常见的工业语言相比，用户能获得异常好的可读性。
-图 \ref{code:ts-tig} 将 \Tigris 同 Typescript（使用渐进类型系统，gradual typing）\footnote{
+搭配这两个不同于一般语言的特性，与常见的工业语言相比，用户能获得异常好的可读性。
+图 \ref{code:ts-tig} 同 Typescript（渐进类型系统，gradual typing）\footnote{
   依笔者意见，是语法设计不当，噪音比较大，可读性较差的代表性语言之一。
 }做了语法上的简单比较。
 
@@ -557,7 +557,6 @@ let sns = map toString $ 1 :: 2 :: Nil
       \begin{aligned}
         &\mathbf{match}\ e_1,\dots, e_m\ \mathbf{with}\\[-10pt]
         &\vert\ p_{1,1},\dots,p_{1,m}\Rightarrow e_1 \\[-10pt]
-        &\vert\ p_{2,1},\dots,p_{2,m}\Rightarrow e_{2}\\[-10pt]
         &\vdots\\[-10pt]
         &\vert\ p_{n,1},\dots,p_{n,m}\Rightarrow e_{n}
       \end{aligned}
@@ -575,15 +574,16 @@ let f | (x, _) => x | (_, y) => y -- redundant alternatives at 3) (_, y)
 \end{minted}
 读者需要注意，完全性检查与运行时的模式匹配毫不相干：考虑上方范例一，根据右手侧的值，我们
 很清楚左侧模式一定匹配成功，但同样的结论并不适用于更复杂的右手侧。模式匹配仅在运行时执行，
-编译期的完全性检查仅根据左侧模式及右侧表达式的类型作出完全性判断。——具体行为与代码由模式匹配编译模块决定和生成。
+编译期的完全性检查仅根据左侧模式及右侧表达式的类型作出完全性判断——具体行为与代码由模式匹配编译模块决定和生成。
 
-模式匹配在语义和实现上可以看作是命令式语言中的 \texttt{switch} 语法结构的超集，它允许用户
-使用声明式（declarative）的写法来优雅的解构某数据结构，是函数式编程的核心功能之一。
+模式匹配在语义和实现上可以看作是命令式语言中的 \texttt{switch} 语法结构的超集，
+它允许用户声明式（declarative）地解构某数据结构，是函数式编程的核心功能之一。
 
 对“声明式”一词的理解，我们不妨联想大量使用这一思考方式的数学。考虑概率的公理化定义，
 这就是典型的声明式表述：它仅告诉我们\underline{应当满足何种条件，才能算作“概率”}，
 而不是从如何计算“概率”这一问题出发，定义“概率”。同理，当我们利用模式匹配处理数据结构时，并未
-显式地写出各种投影（例如数组访问）操作，而仅仅是告诉编译器：“满足这一模式的数据结构才能通过”。
+显式地写出各种投影（例如数组访问）操作，而仅仅是告诉编译器：“满足这一模式的数据结构才能匹配”——
+由编译器自行生成访问数据结构的代码。
 简单地说，声明式只表述程序\emph{应该做什么}（what）；命令式只表述程序\emph{该怎么做}（how）。
 
 \paragraph{运算符} 是特殊的，被绑定到某个表达式（实现）上的字符串。运算符可以被句法分析器识别，在代码中串连使用。
@@ -603,8 +603,8 @@ let f | (x, _) => x | (_, y) => y -- redundant alternatives at 3) (_, y)
   其中 \texttt{<op>} 表示运算符对应的字符串，且为 \texttt{<strlit>} 的子集；
   以供 \texttt{chainl/chainr} 组合子使用。
   $impl$ 对应元语言（Lean）中经 $\eta$-变换的 \texttt{<expr>}，类型 $\mathsf{Expr}\to\mathsf{Expr}\to\mathsf{Expr}$\footnote{
-    熟悉代数的读者马上知道，这里的 $impl$（譬如 \texttt{App : Expr -> Expr -> Expr} 结点）与对象语言（\Tigris）中的二元运算符、
-    函数应用语法\emph{同态}（即两者在这一映射下结构不变），由同态射 $\mathsf{chainl/r_p}(impl)$ 给定。
+    熟悉代数的读者马上知道，$impl$（譬如 \texttt{App : Expr -> Expr -> Expr} 结点）与对象语言 \Tigris 中的二元运算符、
+    函数应用语法\emph{同态}（homomorphic，即两者在这一映射下结构不变），由同态射 $\mathsf{chainl/r_p}(impl)$ 给定。
     换句话说，\underline{\Tigris 中的所有二元运算符或函数应用，在实现中都有对应的 $impl$ 以替换之}。
   }。
 \end{definition}
@@ -621,7 +621,7 @@ let f | (x, _) => x | (_, y) => y -- redundant alternatives at 3) (_, y)
 虽然存在无穷多的候选字符串可供用户选择用来声明运算符，但我们也用同种方式
 内置了一些常见的运算符（其定义仍然可被覆盖）\footnote{
   虽然在实际应用中，更常见的思路是将运算符绑定到类型类的方法上以方便调用接口方法，但此处我们
-  去繁从简；此外，目前而言我们的系统中也确实不包含序章定义（prelude，即包含某一语言最基本定义的源文件，由该语言本身写成）。
+  去繁从简；此外，目前而言我们的系统中也确实不包含序章定义（prelude，语言最基本定义的源文件）。
 }\,\footnote{
   按常规做法，通过硬编码手段，语法构造的优先级应小于任意运算符，也就是说，\mintinline{ocaml}{let n = 10 in n + x}
   应当是 \mintinline{ocaml}{let n = 10 in (n + x)}，而非 \mintinline{ocaml}{(let n = 10 in n) + x}.
@@ -684,13 +684,12 @@ let rec xs === ys =
 绑定的值的定义对编译器不可见，因为其并非在本语言内部定义的。
 \begin{minted}{bnf}
 <extern-decl> ::= extern <ident> <extern-symb> : <scheme>
-<extern-symb> ::= <strlit>
 \end{minted}
 
 外部声明引入了一个不透明（opaque，即无定义的）的标识符 \texttt{<ident>}，
 其类型为 \texttt{<scheme>}，被绑定到外部函数（以名字引用的） \texttt{<extern-symb>} 上。
 虽然 \Tigris 是一个纯函数式语言，但与 Haskell 或 Lean 不同，其并不强求用户——若要直接引入
-具有副作用的函数，就可以利用 FFI. 我们认为这是一个高级功能，参见小节 \ref{sect:ffi} 中更细致的描述。
+具有副作用的函数，就可以利用 FFI. 这是一个高级功能，参见小节 \ref{sect:ffi} 中更细致的描述。
 
 \section{类型、类型类与实例定义}
 \paragraph{数据类型定义} 用于引入新类型。其将声明的类型构造子绑定到两种类型定义之一：
@@ -707,6 +706,7 @@ let rec xs === ys =
 \end{definition}
 \paragraph{归纳类型} 在工程上亦称代数数据类型，是函数式编程特征之一的发达的类型系统带来的独特机制。
 和上文所说的模式匹配一样，对 C 熟悉的读者可以将其看作 \texttt{union} 和 \texttt{enum} 关键字的一个超集。
+下文做一简单理论介绍，亦为后文 \Tigrisd 叙述先验知识。
 
 从理论的角度讲，结构体类型与元组类型无异，且后者可由前者编码（实现），前者无非是带名字的后者——
 它们表示的是“且”（严谨地说，积）关系；而表示“或”（严谨地说，和）关系的类型
@@ -813,8 +813,7 @@ type Tree a = Lf | Br a (Tree a) a
 因为两者在软件工程方法学上的意义相似，往后除非特指，我们亦用“接口”一词表示类型类。
 \begin{definition}[类型类声明] 由以下 BNF 给定
 \begin{minted}{bnf}
-<class-decl>  ::= class <class-ident> <type-binder> = <type-record>
-<class-ident> ::= <type-ctor>
+<class-decl>  ::= class <type-ctor> <type-binder> = <type-record>
 \end{minted}
 \end{definition}
 读者注意，我们使用 \texttt{class} 关键字定义类型类不代表这和面向对象范式的\emph{类}有任何
@@ -860,7 +859,7 @@ $.
 \begin{minted}{bnf}
 <inst-decl>        ::= instance ":"? <inst-scheme> = "{" <inst-method-decl> "}"
 <inst-scheme>      ::= (FORALL <type-binder>+)? <inst-context>? ","
-                       <class-ident> <type-expr>+
+                       <type-ctor> <type-expr>+
 <inst-context>     ::= "[" sepBy1(",", <qualified>) "]"
 <inst-method-decl> ::= sepBy(",", <let-binder>)
 \end{minted}
@@ -902,7 +901,6 @@ let f' = heq (hadd 2 3) 5
 
 虽然类型检查器能够在用户不提供任何谓词的情况下根据实现代码推断谓词，
 我们仍然要求用户显式完整地给出上下文。
-顶层的实例定义可以有选择的用 \texttt{;;} 作分隔，提高可读性。
 
 \section{实现细节}
 前文的部分论述涉及到了部分模块的实现细节，下面我们将在这一部分集中的对 \Tigris 的词法、句法分析，类型检查做一些更细致的描述。

@@ -13,6 +13,7 @@
 \usepackage{textcomp}
 \usepackage{graphicx}
 \usepackage{quiver}
+\usepackage{metalogo}
 \setmonofont{Victor Mono}[Scale=.9]
 \setCJKfamilyfont{jarm}{Yu Mincho}
 \newcommand\ja{\CJKfamily{jarm}\CJKnospace}
@@ -39,11 +40,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %\hypersetup{colorlinks=false}%把链接变成红色
-\hypersetup{colorlinks=true,
-  linkcolor=black,
-  filecolor=black,
-  urlcolor=black,
-citecolor=black,}
+\hypersetup{ colorlinks=true
+  , linkcolor=black
+  , filecolor=black
+  , urlcolor=black
+  , citecolor=black
+  , pdftitle={TinyTheorem: A prototype for a dependently-typed programming language with theorem proving}
+  , pdfauthor={Evan Gao}
+  , pdfkeywords={programming language, type theory, theorem prover, compiler}
+}
 
 \begin{document}
 \let\cleardoublepage \clearpage
@@ -120,7 +125,7 @@ citecolor=black,}
 %%% 停止正文中页眉!
 \renewcommand{\headrulewidth}{0pt}
 %%%=============   参  考  文  献   =============%%%
-\nocite{*} 
+\nocite{*}
 \bibliographystyle{gbt7714-numerical}
 \cleardoublepage
 %\phantomsection

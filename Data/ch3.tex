@@ -235,13 +235,13 @@ HM 的主类型特性保证了论断
 \begin{definition}[Skolemization]
   将 TV 替换为 skolems 的过程，skolems 不能和除自身以外的任何类型合一化。
   \begin{equation}
-    \skolem(\forall \bar{\alpha}.\, \bar{\pi} \Rightarrow \tau) =
-    [\bar{\alpha} \mapsto \overline{\mathsf{sk}_\alpha}](\tau)
+    \skolem(\forall \bar{\rpnt{tv}}.\, \bar{\pi} \Rightarrow \rpnt{ty}) =
+    [\bar{\rpnt{tv}} \mapsto \overline{\mathsf{sk}_\rpnt{tv}}](\rpnt{ty})
   \end{equation}
-  其中每一 \(\mathsf{sk}_\alpha\) 都是崭新的 skolem 常量（通过0-元类型构造子实现，
-  在实现中有形式 \texttt{?sk.\(\alpha\)}）。
+  其中每一 \(\mathsf{sk}_\rpnt{tv}\) 都是崭新的 skolem 常量（通过0-元类型构造子实现，
+  在实现中有形式 \texttt{?sk.\(\rpnt{tv}\)}）。
   “刚性”一词很好地表达了 skolem 的关键性质：
-  \underline{\(\mathsf{sk}_\alpha \sim \tau\) 正确，当且仅当 \(\tau = \mathsf{sk}_\alpha\).}
+  \underline{\(\mathsf{sk}_\rpnt{tv} \sim \rpnt{ty}\) 正确，当且仅当 \(\rpnt{ty} = \mathsf{sk}_\rpnt{tv}\).}
 \end{definition}
 
 \begin{definition}[刚性变量集合/栈 rigid set/stack]
@@ -250,8 +250,8 @@ HM 的主类型特性保证了论断
   我们通过栈作为数据结构的特性自然地实现对嵌套作用域中的刚性变量的记录。这套系统有如下两个重要方法：
   \begin{equation}
     \begin{aligned}
-      \pushRigid(\bar{\alpha}) &: \quad \rigid := \rigid \cup \bar{\alpha};\quad
-      \mathit{stack} := \bar{\alpha} ::  \mathit{stack} \\[-5pt]
+      \pushRigid(\bar{\rpnt{tv}}) &: \quad \rigid := \rigid \cup \bar{\rpnt{tv}};\quad
+      \mathit{stack} := \bar{\rpnt{tv}} ::  \mathit{stack} \\[-5pt]
       \popRigid() &: \quad \mathbf{let}\; (S ::  \mathit{rest}) = \mathit{stack}\; \mathbf{in}\;
       \rigid := \rigid \setminus S;\quad
       \mathit{stack} := \mathit{rest}
@@ -261,7 +261,7 @@ HM 的主类型特性保证了论断
   \begin{property}[Invariant]
     任一时刻，刚性变量集合 $\rigid$ 都满足 $\rigid\equiv \bigcup stack$
     即 $\rigid$ 是栈上的集合的并。在约束求解时，任一替换规则
-    \(\alpha \mapsto \tau\) 满足 \(\alpha \in \rigid\) 和 \(\tau \neq \alpha\) 都将被拒绝。
+    \(\rpnt{tv} \mapsto \rpnt{ty}\) 满足 \(\rpnt{tv} \in \rigid\) 和 \(\rpnt{ty} \neq \rpnt{tv}\) 都将被拒绝。
   \end{property}
 \end{definition}
 
@@ -269,13 +269,13 @@ HM 的主类型特性保证了论断
   约束变量求解器（即合一化求解过程）在遇到刚性变量时按以下规则工作：
   \begin{mathpar}
     \inferrule*[right=Solve-Rigid]
-    {\alpha \in \rigid \\
-    \tau \neq \alpha}
-    {\solvesf(\alpha \sim \tau) = \mathbf{error}}
+    {\rpnt{tv} \in \rigid \\
+    \rpnt{ty} \neq \rpnt{tv}}
+    {\solvesf(\rpnt{tv} \sim \rpnt{ty}) = \mathbf{error}}
 
     \inferrule*[right=Solve-Rigid-Ok]
-    {\alpha \in \rigid}
-    {\solvesf(\alpha \sim \alpha) = \varnothing}
+    {\rpnt{tv} \in \rigid}
+    {\solvesf(\rpnt{tv} \sim \rpnt{tv}) = \varnothing}
   \end{mathpar}
 \end{remark}
 

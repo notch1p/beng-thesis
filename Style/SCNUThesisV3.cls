@@ -147,6 +147,9 @@
       \renewcommand\author[1]{\def\CAST@value@author{#1}}
       \newcommand\eauthor[1]{\def\CAST@value@eauthor{#1}}
 
+      \newcommand\titlefst[1]{\def\CAST@value@titlefst{#1}}
+      \newcommand\titlesnd[1]{\def\CAST@value@titlesnd{#1}}
+
       \newcommand\advisor[1]{\def\CAST@value@advisor{#1}}
       \newcommand\secondadvisor[1]{\def\CAST@value@secondadvisor{#1}}
       \newcommand\eadvisor[1]{\def\CAST@value@eadvisor{#1}}
@@ -197,41 +200,46 @@
 
         \begin{center}
           \songti\xiaosihao
-          \qquad\qquad\quad 分类号:
+          \qquad\qquad\quad {}
           \CASTnounderline[90pt]{\CAST@value@classification}
           \hfill
-          密级:~
-          \CASTnounderline[120pt]{\CAST@value@confidential}
-          \vskip 0pt  \vspace{-0.18cm}
-          \qquad\qquad\quad  UDC:~
-          \CASTnounderline[90pt]{\CAST@value@UDC}
+          {}
+          \CASTnounderline[120pt]{} %{\CAST@value@confidential}
+          \vskip 0pt  \vspace{-4cm}
+          \qquad\qquad\quad {} %UDC:~
+          \CASTnounderline[90pt]{} %{\CAST@value@UDC}
           \hfill
-          学号:~
-          \CASTnounderline[120pt]{\CAST@value@studentID}
+          {} %学号:~
+          \CASTnounderline[120pt]{} %{\CAST@value@studentID}
           \vskip \stretch{2} \vspace{0.38cm}
 
-          \includegraphics[width=88mm]{Style/Figures/1SCNULogo}    %  fig 表示路径
-          \vspace{0.98cm}
+          \includegraphics[width=150mm]{Style/Figures/SCNULogo-new}    %  fig 表示路径
+          \vspace{1.5cm}
 
-          {\songti\bfseries\xiaochuhao \CAST@value@type~毕~业~论~文（设~计）} %\vspace{0.18cm}
+          {\heiti\bfseries\xiaochuhao\quad \CAST@value@type~毕~业~论~文（设~计）} %\vspace{0.18cm}
 
           %{\bfseries\xiaoerhao (~学~术~学~位~)} \vspace{0.68cm}
 
           \vskip \stretch{1}
-          {
-            \begin{spacing}{1.5}
-              \songti\bf\erhao \CAST@value@title
-          \end{spacing} } % 论文题目
-          \vspace{0.5cm}
+%          {
+%            \begin{spacing}{1.5}
+%              \songti\bf\erhao \CAST@value@title
+%          \end{spacing} } % 论文题目
+%          \vspace{0.5cm}
           \vskip \stretch{1}
-          \fangsong
+          \heiti
           \def\tabcolsep{1pt}
           \def\arraystretch{1}
-          \begin{tabular}{cllcrl} \vspace{0.12cm}
+          \begin{tabular}{cllllcrl} \vspace{0.12cm}
             %{\sihao \makebox[7em][s]{题\hspace{\fill}目}} &  { : \  } &
             %\multicolumn{4}{l}{\CASTunderline[218pt]{ \sihao\CAST@value@title}}
             %\\
-
+            {\sihao \makebox[7em][s]{论\hspace{\fill}文\hspace{\fill}题\hspace{\fill}目}} &  { : \  } &
+            \multicolumn{4}{l}{\CASTunderline[218pt]{\sihao\CAST@value@titlefst}}
+            \\
+            {\sihao \makebox[7em][s]{\hspace{\fill}}} &  {} &
+            \multicolumn{4}{l}{\CASTunderline[218pt]{ \sihao\CAST@value@titlesnd}}
+            \\
             {\sihao \makebox[7em][s]{指\hspace{\fill}导\hspace{\fill}老\hspace{\fill}师}} &  { : \  } &
             \multicolumn{4}{l}{\CASTunderline[218pt]{ \sihao\CAST@value@advisor}}
             \\
@@ -241,7 +249,7 @@
             {\sihao  \makebox[7em][s]{学\hspace{\fill}号}}&     {  : \  } &
             \multicolumn{4}{l}{\CASTunderline[218pt]{\sihao\CAST@value@studentID}}
             \\
-            {\sihao  \makebox[7em][s]{院\hspace{\fill}系}} &  {  : \   } &
+            {\sihao  \makebox[7em][s]{学\hspace{\fill}院}} &  {  : \   } &
             \multicolumn{4}{l}{\CASTunderline[218pt]{\sihao\CAST@value@college}}
             \\
             {\sihao \makebox[7em][s]{专\hspace{\fill}业}}&   { : } &
@@ -252,7 +260,7 @@
             \\
           \end{tabular}
           \vskip \stretch{1}\vfill
-          {\sihao{\CAST@value@submityear}\ 年\ \CAST@value@submitmonth\ 月}
+          {\fangsong\sihao{\CAST@value@submityear}\ 年\ \CAST@value@submitmonth\ 月}
         \end{center}
         \cleardoublepage
       }

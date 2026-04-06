@@ -46,10 +46,15 @@ OTTFLAGS	= -signal_parse_errors true \
 
 # implied bibtex
 main.pdf:
-	latexmk -xelatex -bibtex -f main.tex
-
+	@if [ -d "_minted" ]; then \
+		find _minted -name "*.highlight.minted" -exec sed -i '' -f "minted_replacements.sed" {} + ; \
+		latexmk -xelatex -bibtex -f main.tex ; \
+	else \
+		latexmk -xelatex -bibtex -f main.tex ; \
+		make main.pdf ; \
+	fi
 default: main.pdf
 
 clean:
 	latexmk -c main.tex
-#
+	-rm main.pdf

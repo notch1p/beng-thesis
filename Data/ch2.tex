@@ -2,7 +2,7 @@
 \Tigris 是一个注重可读性与语法统一性的灵活的，纯函数式静态类型的语言。它从 Lean、OCaml 和 Haskell 汲取灵感。
 
 \section{词法惯例}
-在下文我们用一套修改版的 BNF（Backus-Naur Normal Form，误和 ABNF 混淆）来表示表层语法。修改过的 BNF 可以在其
+在下文我们用一套修改版的 BNF（Backus-Naur Normal Form，勿和 ABNF 混淆）来表示表层语法。修改过的 BNF 可以在其
 右手侧（RHS）接受 POSIX 正则表达式中的 \texttt{+*[\,\^\;]}.
 {\setlength{\parskip}{-1em}
   \paragraph*{文本编码} Tigris 源代码应当是 UTF-8 编码的文本文件。
@@ -166,7 +166,7 @@ let (x, y) = ({x = 1, y = 2}, {x = 1, y = 2, z = 3})
   中出现。
 
   \subparagraph{Skolem TV} 亦称 skolems，记作 \texttt{?sk.a} 其中 \texttt{a} 指代
-  原始 TV。Skolems 由 skolemization 过程产生，这些 TV 实际上由类型构造子编码\footnote{在实现中，我们用 \texttt{TCon} 编码，避免错误的合一化。}，并且\emph{绝对不}应被实例化。这使得类型检查器能够查出更多的类型错误，考虑
+  原始 TV. Skolems 由 skolemization 过程产生，这些 TV 实际上由类型构造子编码\footnote{在实现中，我们用 \texttt{TCon} 编码，避免错误的合一化。}，并且\emph{绝对不}应被实例化。这使得类型检查器能够查出更多的类型错误，考虑
 }
 \begin{minted}[escapeinside=\%\%,frame=single]{lean4}
 instance : Functor Option =
@@ -192,7 +192,7 @@ Skolems 所具有的特殊性质称为\emph{刚性}（rigid），在后文我们
   \paragraph*{不定递归类型}\label{para:equirecursive} 会被类型检查器拒绝，因此
   类型检查器无法推断诸如程序 \mintinline{ocaml}|fun x -> x x| 的类型，且一个特殊的错误信息会被抛出。
   这是为了提高类型系统的合理性，因为不定递归类型的方程式无解，或者说其解是一个无限增长的树形结构。
-  允许其存在，即可构造不动点组合子（fixpoint combinator），其中又以 \texttt{Y} 组合子最为著名（其中一种实现）：
+  允许其存在，即可构造不动点组合子（fixpoint combinator），其中又以 $\mathsf{Y}$ 组合子最为著名（其中一种实现）：
   \begin{equation}
     \mathsf{Y}\ f = f\ (\mathsf{Y}\ f) : \forall \alpha.\;(\alpha\to\alpha)\to\alpha,
   \end{equation}
@@ -245,7 +245,7 @@ Skolems 所具有的特殊性质称为\emph{刚性}（rigid），在后文我们
 与其他语言不同，模式不一定是线性的，即单个变量在一个模式中可以绑定多次，且新绑定覆盖旧绑定。但是，应当注意可能的
 语义问题：
 \begin{minted}[frame=single]{lean4}
-let prodEq : ∀a b, a × b → Bool
+let prodEq : ∀a b, a × b -> Bool
   | (x, x) => true
   | (x, _) => false -- Found redundant alternatives at 2)  #[(x, _)]
 \end{minted}
@@ -254,7 +254,7 @@ let prodEq : ∀a b, a × b → Bool
 
 \paragraph*{字面量模式} 可用于测试字面量是否相等：
 \begin{minted}[frame=single]{lean4}
-let strToBool : String → Bool = fun
+let strToBool : String -> Bool = fun
   | "true"  => true
   | "false" => false
 \end{minted}
@@ -283,7 +283,7 @@ let f2 : ∀ α, List (List α) → α × List α = Λ α. fun ?x₀ : List (Lis
   结构体是归纳类型的语法糖，结构体模式则是构造模式的语法糖。因而，可以用常规的构造模式去解构之：
 }
 \begin{minted}[ignorelexererrors=true,frame=single]{lean4}
-class Functor (m : 1) = {map : forall a b, (a → b) → m a → m b}
+class Functor (m : 1) = {map : forall a b, (a -> b) -> m a -> m b}
 let getMap (Functor f) = f
 \end{minted}
 
@@ -339,7 +339,7 @@ let getMap (Functor f) = f
 <let-binder>  ::= <pat'> = <expr>                               single-pattern binding
                 | <ident> <expr-binder>* <type-expr>? <let-rhs> value/function binding
 <let-rhs>     ::= "=" <expr> | <expr-match>                     let binding RHS
-<literal>     ::= <intlit> | <strlit> | "true" | "false"
+<literal>     ::= <intlit> | <strlit> | true | false
 \end{minted}
 \end{definition}
 \paragraph*{基本表达式} 指的是在 \texttt{<expr-atom>} 中列出的所有语法，加上函数简写的语法糖。
@@ -417,13 +417,13 @@ let getMap (Functor f) = f
     回忆：在某一对象上加横线表示\emph{一系列}这样的对象。
   }
 定义函数，例如：}
-\begin{minted}[ignorelexererrors=true,frame=single]{ocaml}
+\begin{minted}[ignorelexererrors=true,frame=single]{haskell}
 let prodSum (x, y) z w = x + y + z + w
 and (x, y) = (1, 2) in prodSum (x, y) 3 4
 
 let (true) = false -- true 不等于（无法匹配）false
 
-let compose f g x = f (g x) ;; infixr 90 "." => compose -- 函数复合
+infixr 90 "." ;; let f . g = fun x => f $ g $ x
 let add20 = (_ + 20) and minus30 | x => x - 30
 in  add20 . minus30 $ 50
 \end{minted}
@@ -451,8 +451,9 @@ Letrec 语法结构的功能，若过分精简地概述，即：
 一个稍微复杂的例子（树与森林）体现互递归的函数、类型（后述）之间的配合使用：
 
 \begin{minted}[frame=single]{ocaml}
-mutual type Tree a   = Empty | Node a (Forest a)
-       type Forest a = Nil   | Cons (Tree a) (Forest a) ;;
+mutual
+  type Tree a   = Empty | Node a (Forest a)
+  type Forest a = Nil   | Cons (Tree a) (Forest a) ;;
 let rec countTree | Empty    => 0
                   | Node _ f => 1 + countForest f
 and countForest   | Nil      => 0
@@ -496,8 +497,7 @@ let rec x = (1, y) and y = 1
 成为需要更精确的 Letrec-绑定限制的理由。
 
 {\setlength{\parskip}{-1em}\subparagraph*{全局定义} 与本地定义几乎一致，但如其名，仅限于顶层（toplevel）。
-  顶层的 Let(rec)-表达式不必再拥有其程序体（即没有 \mintinline{ocaml}{in ..} 从句），退化为一个独立的定义。多个
-  顶层 Let 可以有选择的用 \texttt{;;} 作分隔，提高可读性。
+  顶层的 Let(rec)-表达式不必再拥有其程序体（即没有 \mintinline{ocaml}{in ..} 从句），退化为一个独立的定义。多个顶层定义可以有选择的用 \texttt{;;} 作分隔，提高可读性。
 
   \subparagraph*{类型推论与泛化} 发生在许多地方。之所以放在 Let 的小标题下，是因为 HM 的自动泛化
   机制与 Let 构造有相关（通称 let-polymorphism）。
@@ -606,7 +606,8 @@ let f | (x, _) => x | (_, y) => y -- redundant alternatives at 3) (_, y)
     熟悉代数的读者马上知道，$impl$（譬如 \texttt{App : Expr -> Expr -> Expr} 结点）与对象语言 \Tigris 中的二元运算符、
     函数应用语法\emph{同态}（homomorphic，即两者在这一映射下结构不变），由同态射 $\mathsf{chainl/r_p}(impl)$ 给定。
     换句话说，\underline{\Tigris 中的所有二元运算符或函数应用，在实现中都有对应的 $impl$ 以替换之}。
-  }。
+  }.
+  运算符不仅出现在表达式中，若其绑定构造子则亦可在模式中出现，例如前文的 \texttt{(::)}.
 \end{definition}
 \begin{definition}[运算符字符串候选 Operator candidate strings]
   与 Haskell 或 OCaml 从给定的一个集合内选取可用运算符字符串不同，类似 Lean，\Tigris 将 \texttt{<op>} 定义为\emph{任意字符串}，
@@ -637,8 +638,7 @@ let f | (x, _) => x | (_, y) => y -- redundant alternatives at 3) (_, y)
     \texttt{+}        & 65         & infixl & 原生整数加法       \\
     \texttt{-}        & 65         & infixl & 原生整数减法    \\
     \texttt{=}        & 50         & infixl & 原生整数等号       \\
-    \texttt{\$}       & 1          & infixr（中缀右结合）& 函数应用             \\
-    \texttt{@@}       & 1          & infixr & 函数应用             \\ \bottomrule
+    \texttt{\$}、\texttt{@@}       & 1          & infixr（中缀右结合）& 函数应用             \\ \bottomrule
   \end{tabular}
 \end{table}
 
@@ -650,45 +650,42 @@ f (g (h (x + y))) ;; f $ g $ h $ x + y ;; f @@ g @@ h @@ x + y
 \end{minted}
 对于某些函数体较大的函数来说，用户可以使用该技巧来避免在函数体两侧加括号，提升代码编写的流畅性。
 这一技巧也被广泛地运用在本项目的实现当中。
-不仅如此，对于前缀/后缀算符而言，我们可以把一个字符串同时声明为这两种类型的运算符，例如
-（其中 \texttt{fact} 是阶乘，而 \texttt{not} 是取反）：
+不仅如此，对于前缀/后缀算符而言，我们可以把一个字符串同时声明为这两种类型的运算符（但目前无法将同一字符串同时声明为前缀/中缀或后缀/中缀），
+例如：
 \begin{minted}[frame=single]{lean4}
 postfix 65 "!" => fact ;; prefix 65 "!" => not ;; (50!, !true)
 \end{minted}
-但读者需要注意，目前无法将同一字符串同时声明为前缀/中缀或后缀/中缀。常见的用法是将列表（广义表、内存中是链表）
-的 \texttt{Cons} 构造子
-绑定到 \texttt{(::)}，使得其可以同时在表达式和模式中
-使用\footnote{\texttt{car} 与 \texttt{cdr} 是两个十分著名的列表访问函数，起源于 LISP.}：
-\begin{minted}[frame=single]{haskell}
-infixr 67 " :: " => Cons
-let car (x :: _) = x ;; let cdr (_ :: xs) = xs
-\end{minted}
+
 \subparagraph{由运算符扩展的 Let-绑定}
 根据运算符定义的语法，我们会发现其右手侧并非必须：虽然本文将\emph{声明}、\emph{定义}混用，
-仅在此处做一小区分：\underline{声明不包含右手侧}。在上面给出的样例之外，\Tigris 还支持 Haskell 风格的由 Let 直接绑定的运算符定义语法：
+仅在此处做一小区分：\underline{声明不包含右手侧}，如 \mintinline{haskell}|infixl 70 " #+# "|.
+在这一区分之上，\Tigris 支持 Haskell 风格的由 Let 直接绑定的运算符定义语法：
 \begin{minted}[frame=single]{ocaml}
 let Some x #+# Some y = Some $ x #+# y
 let rec xs === ys =
   match xs, ys with
+  | Nil, Nil => true
   | x :: xs, y :: ys => x = y && xs === ys
   | _, _ => false
 \end{minted}
+\vspace{-1em}
 
-扩展的 Let-绑定能够在其左手侧接受二元运算符的应用的形式，而算符两侧则可以接受模式。
-通过这种形式定义的运算符不一定需要运算符声明，默认优先级 50，左结合。
-这一模式除了形式上更加自然，最重要的优势在于其搭配 Let-表达式，
-可以允许用户局部地、快捷地使用暂时定义的运算符，而不必在顶层写大量的运算符声明。
-从上面的例子还可知道这种 Let-绑定亦支持递归定义。在目标代码生成中，运算符 \texttt{op} 有形式 \texttt{«op»}.
+扩展的 Let(rec)-绑定能够在其左手侧接受二元运算符的应用形式，而算符两侧则可以接受模式。
+当这种形式的 Let 产生歧义，即如 \mintinline{ocaml}|let x :: xs = ..| 可以同时解糖为
+模式匹配或运算符定义，则模式匹配优先。
+通过这种形式定义的运算符不一定需要声明，默认优先级 50，左结合。
+这种定义除了形式上更加自然，最重要的优势在于其作为表达式时
+允许用户局部、快捷地暂时定义、使用运算符，而不必在顶层写大量的运算符声明。
+在目标代码生成中，运算符 \texttt{op} 有形式 \texttt{«op»}.
 
 \paragraph{外部声明} 利用了 \Tigris 的 FFI 功能来声明外部函数，“外部”即这些标识符所
 绑定的值的定义对编译器不可见，因为其并非在本语言内部定义的。
 \begin{minted}{bnf}
 <extern-decl> ::= extern <ident> <extern-symb> : <scheme>
 \end{minted}
-
 外部声明引入了一个不透明（opaque，即无定义的）的标识符 \texttt{<ident>}，
 其类型为 \texttt{<scheme>}，被绑定到外部函数（以名字引用的） \texttt{<extern-symb>} 上。
-虽然 \Tigris 是一个纯函数式语言，但与 Haskell 或 Lean 不同，其并不强求用户——若要直接引入
+虽然 \Tigris 是一个纯函数式语言，但与 Haskell 或 Lean 不同，其不强求用户——若直接引入
 具有副作用的函数，就可以利用 FFI. 这是一个高级功能，参见小节 \ref{sect:ffi} 中更细致的描述。
 
 \section{类型、类型类与实例定义}
@@ -730,14 +727,14 @@ let rec xs === ys =
   无穷有序的类型宇宙中则不一定，因为存在泛类型宇宙（universe polymorphic）的函子定义。
 }
 代数（algebra for an endofunctor, F-algebra），而其中
-“且”类型即 categorical product（$(\times)$，积），
-“或”类型即 categorical coproduct/sum（$(+)$，余积/和）。同时，从
+“且”类型即 categorical product（$\times$，积），
+“或”类型即 coproduct/sum（$+$，余积/和）。同时，从
 这一定义中可以导出任意归纳类型的消去子（eliminator），亦称计算法则，
 属于 catamorphism\footnote{
   cata-态射，cata- 是希腊语词根，表示某样事物的崩坏（消去）。
 }
 的一种，其代表如 \texttt{fold}/\texttt{foldr}.
-实际上，各大定理证明器亦确实会为所有归纳类型（在证明器的上下文中是 inductive family/indexed family）
+实际上，各大定理证明器亦确实会为所有归纳类型（在证明器的上下文中是 inductive/indexed family）
 导出消去子，作为最基础的计算规则。具体地说，任意消去子的参数都应该包含
 \vspace{-.6em}
 \begin{enumerate}\itemsep-.2em
@@ -757,6 +754,7 @@ let rec xs === ys =
 但这些内容已超出本文范围，读者可了解递归论（计算理论）、证明论和范畴论。
 归纳类型具有较强的理论特性，根植于数学，但这并不妨碍其在工程上具有的重大意义，一些现代的主流语言，如
 Rust、Swift 亦已支持这一特性，且广泛运用于编程实践中。在 \Tigris 中，归纳类型定义具有以下格式：
+\vspace{-1em}
 \begin{equation}
   \mathbf{type}\ T\ \bar{\alpha} =
   C_1\ \sigma_{1,1}\cdots\sigma_{1,c_1}
@@ -876,8 +874,7 @@ instance ∀a [Eq a], HEq a a = {heq = eq}
 \end{minted}
 实例定义可以量化 TV，与谓词搭配，就可以表示逻辑上的\emph{蕴含}（implication）关系（如例二、三）。
 这里，我们量化 $a, b$ 与一个实例 \(\mathsf{HEq}\ a\ b\)，并用之作为 $\mathsf{HEq}\ b\ a$ 的实现来
-表达异性等号（heterogenous equality）的交换律（commutativity），
-也用来表达\underline{二元关系的同性等号是异性等号的子集}这一事实。
+表达异性等号（heterogenous equality）的交换律（commutativity），并通过 $\mathsf{Eq}\ a\to \mathsf{HEq}\ a\ a$ 表达\underline{二元关系的同性等号是异性等号的子集}这一事实。
 
 关于编译器是如何在程序中寻找实例这一问题，
 我们将在后文介绍实例解析（查找）算法，目前只需明确以下若干规律：
@@ -897,7 +894,7 @@ let f' = heq (hadd 2 3) 5
 \end{minted}
 在上面的例子中，\texttt{hadd 2 3} 被类型检查器推断为含有 MV，导致 \texttt{HEq} 的实例查找失败。
 这是显然的，因为异性加法的结果类型是独立的，仅仅给定其参数并不能推出具体的结果类型。我们需要
-加上类型标注如 \texttt{f' : Int} 才能令编译器找到第一行定义的实例。
+加上类型标注如 \texttt{f' : Int} 才能令编译器找到第二行定义的实例。
 
 虽然类型检查器能够在用户不提供任何谓词的情况下根据实现代码推断谓词，
 我们仍然要求用户显式完整地给出上下文。
@@ -911,14 +908,15 @@ let f' = heq (hadd 2 3) 5
 解析表达文法（parsing expression grammar，PEG）\upcite{10.1145/964001.964011}相似：两者遇到歧义语句时总是选择第一条匹配的生成规则（production rule）。
 但目前而言，不同于 Lean 的实现，\Tigris 的句法分析模块还不是 Packrat 分析器（PEG 的其中一种），后者能够在线性时间内完成分析。
 此外，因为使用单子设计模式，我们的实现仍然存在大量的回溯（backtracking）操作。句法分析单子 \texttt{TParser} 类型为
-\begin{Verbatim}[numbers=left,baselinestretch=1]
-abbrev TParser σ := SimpleParserT Substring Char $ StateRefT (PEnv × String) (ST σ)
-\end{Verbatim}
+\begin{minted}[numbers=left,baselinestretch=1]{lean4}
+abbrev TParser σ := SimpleParserT Substring Char
+                  $ StateRefT (PEnv × String) (ST σ)
+\end{minted}
 其中 $\sigma$ 是一形式参数，用于传入基于 \texttt{ST} 的句法分析单子。这样，我们能够在纯函数式语言中储存真正可变（mutable）、
 高效的状态，因为 \texttt{ST} 是基于 threadlocal 的实现，能够赋予计算环境（computational context）真实的可变副作用；
 相比利用栈空间的 \texttt{StateT} 更高效。上述定义中的单子转换栈（monad transformer stack）还附带了其余两个
 转换器 \texttt{SimpleParserT}、\texttt{StateRefT}，
-这使得我们可以在 \texttt{ST} 中利用类似 \texttt{State} 的接口方法以流畅的编写代码，同
+这使得我们可以在 \texttt{ST} 中利用类似 \texttt{State} 的接口方法以流畅地编写代码，同
 时 \texttt{Substring} 的使用允许通过一对指针
 在同一字符串上做计算（句法分析）而不产生任何中间字符串数据，保证内存使用的高效性。
 
@@ -929,32 +927,31 @@ abbrev TParser σ := SimpleParserT Substring Char $ StateRefT (PEnv × String) (
 在句法分析组合子下的实现：这些实例，与基本的句法分析框架及常见的组合子已由 F. G. Dorais 的现有库
 \texttt{lean4-parser} 完成，我们不再造轮子。但除此之外，我们还定义了数个重要但缺失的组合子实现函数应用、运算符的分析，
 例如 \texttt{chainl}、\texttt{chainr}：
-\begin{Verbatim}[numbers=left,baselinestretch=1]
+\begin{minted}[numbers=left,baselinestretch=1]{lean4}
 partial def chainr1 (p : ParserT ε σ τ m α)
   (op : ParserT ε σ τ m (α -> α -> α)) : ParserT ε σ τ m α := do
   let x <- p; rest x where
   rest x := (do let f <- op; chainr1 p op <&> f x) <|> pure x
-\end{Verbatim}
+\end{minted}
 \paragraph{类型检查器} \Tigris 代码库中有两个类型检查器，其一较为老旧但简单且高效的
 的 Algorithm W 实现；其二是目前正在使用的，利用约束求解算法的实现。选择后者的原因是
 其设计模式更适合用于实现类型类功能、量化类型。在本文我们只探讨该实现。
 类型检查器运行在 \texttt{InferC} 单子中：
-\begin{Verbatim}[numbers=left,baselinestretch=1]
+\begin{minted}[numbers=left,baselinestretch=1]{lean4}
 abbrev InferC σ := StateRefT CState (EST TypingError σ)
-\end{Verbatim}
+\end{minted}
 
 为了处理不当合一化，我们参照 GHC 的 TV 分层机制实现了一个简化的版本；此外，对于编译器
 而言，类型信息是宝贵的，在后续的 System F 繁饰与 IR 降级中皆有使用。因而检查器不仅
 检查、推断类型，还负责从原始 AST（\texttt{Expr}）中产生带类型的 AST，\texttt{TExpr} 并
 将其传递给繁饰模块用于 System F 的繁饰，最后产生 System F IR（\texttt{FExpr}）。
 \texttt{FExpr} 同 \texttt{Expr} 即核心代数的定义十分相似，我们在此只列出其差异部分：
-\begin{Verbatim}[numbers=left,baselinestretch=1]
-  inductive FExpr where -- (..其余结点略..)
-    | TyLam  (a : TV) (body : FExpr)                                  -- 类型抽象
-    | TyApp  (f : FExpr) (arg : MLType)                               -- 类型应用
-    | Proj   (src : FExpr) (mname : String) (idx : Nat) (ty : MLType) -- 字典投影
-  deriving Repr, Inhabited
-\end{Verbatim}
+\begin{minted}[numbers=left,baselinestretch=1]{lean4}
+inductive FExpr where -- (..其余结点略..)
+  | TyLam  (a : TV) (body : FExpr)                                  -- 类型抽象
+  | TyApp  (f : FExpr) (arg : MLType)                               -- 类型应用
+  | Proj   (src : FExpr) (mname : String) (idx : Nat) (ty : MLType) -- 字典投影
+\end{minted}
 应当认识到这一 AST 的表达力是超出目前 \Tigris 的，因为其属于 Girard 提出的 System F 计算系统，
 允许项依赖于类型，支持 Arbitaray-rank Polymorphism 和 Impredicative types，所以亦称二阶\lambdacalc。
 

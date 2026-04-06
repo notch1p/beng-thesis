@@ -104,52 +104,50 @@ def map {α β : Type} {n : Nat} (f : α -> β) (as : Vector α n)
 
 \paragraph{内置证明} 是 \Tigrisd 内建的证明手段。共五种，前四种为原生构造，后一种为语法糖。
 
-\texttt{sorry}（证明）：可用于证明任意命题，显然是不合理的。实际使用中，我们用此
+\texttt{sorry}：可用于证明任意命题，显然是不合理的。实际使用中，我们用此
 来标记一个未完成的证明，方便之后补全，而不使得编译器报错。此命令的任一使用都会触发编译器的报警，
 并使得其本身和与之相关的所有定义都被标记为\emph{不相关}。
 
-\texttt{rfl}（证明）：为 reflexivity（自反性）的简写，可证明 $a = a$，对任意项 $a$. 可以说这是
+\texttt{rfl}：为 reflexivity（自反性）的简写，可证明 $a = a$，对任意项 $a$. 可以说这是
 所有等式命题的\emph{根证明}，因为更复杂的证明无非是将等式的任一一侧变换成另一侧，并通过自反性得证。\texttt{rfl}
 远比其看起来的复杂：其支持 $\alpha$-等价 和 $\beta$-等价，即经过任意有限步 $\alpha$/$\beta$-变换的两个项
 在 \texttt{rfl} 下直接相等。
 
-\texttt{exfalso tm}（证明）：即爆炸原理。\texttt{exfalso} 接收一个证伪的项，
+\texttt{exfalso tm}：即爆炸原理。\texttt{exfalso} 接收一个证伪的项，
 以此证明任意命题，或“构造”任意类型的一个值。在没有假设的前提下，若独立证出证伪的项，说明
 系统不合理（unsound）。
 
-\texttt{(|>)}（证明）：即等式重写。表达式 $h\triangleright e$ 在左手侧接受一等号类型 $a = b$ 的证明 $h$，
+\texttt{(|>)}：即等式重写。表达式 $h\triangleright e$ 在左手侧接受一等号类型 $a = b$ 的证明 $h$，
 在右手侧要求 $e = a$，则可以证明 $b$.
 
-\texttt{nomatch tm}（证明）：表示模式匹配 $tm$ 不存在任何分支，可以看作是另一种形态的爆炸原理。
+\texttt{nomatch tm}：表示模式匹配 $tm$ 不存在任何分支，可以看作是另一种形态的爆炸原理。
 给定空类型 \mintinline{lean4}|inductive Empty|，若 \Tigrisd 能证明其不含任何 introduction rule（构造子），
 则模式匹配其值 $tm$ 时可用 \texttt{nomatch} 证明任意命题，如
 \begin{minted}[frame=single]{lean4}
 example (h : Empty) (C : Type) : C := nomatch h
 \end{minted}
 在实现上，这些命令基本被硬编码到核心代数 \mintinline{haskell}|Term| 中，且有定义
-
 \begin{minted}[numbers=left]{haskell}
 type Type = Term
-data Term = Type0 {- 非直谓的类型宇宙 -} | {- .. 略 .. -}
+data Term
+  = Type0 {- 非直谓的类型宇宙 -} | {- .. 略 .. -}
   | Sorry {- sorry 证明 -} | Print {- show 命令 -} | Rfl {- rfl 证明 -}
   | Rw Term Term {- (|>) 证明 -} | Contra Term {- exfalso 证明 -}
 \end{minted}
 其中，我们还定义了别名 \mintinline{haskell}|Type| 并将之绑定到项（\mintinline{haskell}|Term|）上：从这里
-也可看出依赖类型论的特点：类型也是项。此外，上面提到的 \texttt{nomatch tm} 证明则并非由硬编码得到，
+也可看出依赖类型论的特点——类型也是项。此外，上面提到的 \texttt{nomatch tm} 证明则并非由硬编码得到，
 而是在句法分析阶段直接解糖成为模式匹配 \mintinline{ocaml}|match tm with|，但其不含任何分支。
 
 搭配 \texttt{Unbound} 库，可以轻松的为这一核心代数实现 \lambdacalc 中最为重要的两个操作：\emph{$\alpha$-相等}判断
 与\emph{变量代换}。
-
-\begin{Verbatim}[numbers=left,baselinestretch=1]
+\begin{minted}[numbers=left,baselinestretch=1]{haskell}
 instance Unbound.Alpha Term where
   aeq' ctx a b = gaeq (strip a) (strip b) where
     gaeq = Unbound.gaeq ctx `on` from
 instance Unbound.Subst Term Term where
   isvar (Var x) = Just (Unbound.SubstName x)
   isvar _       = Nothing
-\end{Verbatim}
-
+\end{minted}
 其中 \texttt{aeq} 即 $\alpha$-相等，\texttt{isvar} 则用于判断核心代数中哪些是可以用于代换的变量；\texttt{on} 中缀应用
 可以看作是二元函数的复合算符。给定函数 $f : \beta\to\beta\to\beta,\, g:\alpha\to\beta$，$f\ \mathrm{on}\ g:\alpha\to\alpha\to\beta$ 是
 $f$ 在 $g$ 上的投影。
@@ -198,9 +196,10 @@ Product，如其形式，与箭头类型 $(\cdot\to\cdot)$ 极为相似，可以
 同理，coproduct 的右手侧也可
 依赖左手侧，可用于编码元组类型。这两个类型的叫法很多，例如前者亦称 dependent function type，后者
 称 dependent sum type. 为了表述清晰，我们统一使用范畴论术语 product/coproduct.
+上面略去了一些常量（$\mathsf{Bool}$、$\mathsf{Unit}$）的规则，因为这些规则
+与 \Tigris 一致。
 
-我们略去一些常量（$\mathsf{Bool}$、$\mathsf{Unit}$）的规则，因为这些规则
-与 \Tigris 一致。不相关项的类型规则同上，但另外给出：
+不相关项的类型规则同上，但另外给出：
 
 \drules[t]{$\Gamma\vdash a : A$}{Irrelevant Typing}{elambda, eapp, epi}
 
@@ -265,8 +264,8 @@ Product，如其形式，与箭头类型 $(\cdot\to\cdot)$ 极为相似，可以
 aeq :: Alpha a => a -> a -> Bool -- 中缀算符 '==='
 fv  :: ( Alpha a, Typeable b
        , Contravariant f, Applicative f) => (Name b -> f (Name b)) -> a -> f a
-id x = Lam $ Unbound.bind x $ Var x -- 在源代码中构建一个 Tigrisd 中的恒等函数的 AST
-id 'x' === id 'y' -- alpha-equiv: (\x -> x) === (\y -> y): >>> True.
+id x = Lam $ Unbound.bind x $ Var x -- 构建恒等函数的 AST
+True = id 'x' === id 'y' -- alpha-equiv: (\x -> x) === (\y -> y)
 \end{minted}
 \subparagraph{定义性相等}可以看作元相等的“升级版”。
 准确地说，定义性相等是定义在\emph{式子}上的\emph{等价关系}（注意：并非\emph{等于}关系！），
@@ -416,8 +415,8 @@ WHNF，具体的说，能够允许我们推迟\footnote{
 
 本文出现过许多类型规则，前面亦曾强调过，类型规则指导着实现——更确切的说，
 类型规则在编程上给出了具体的实现步骤\footnote{从下往上读即可。这是类型规则，或者更广泛地说，证明树的特点。}。
-譬如此处的 WHNF 消去，可以直接对应着写出具体代码——以 \rref{WHNF-letpair} 为例，我们撷取函数 \texttt{whnf} 的一部分如下所示
-\begin{Verbatim}[numbers=left,baselinestretch=1]
+譬如此处的 WHNF 消去，可以直接对应着写出具体代码——以 \rref{WHNF-letpair} 为例，我们撷取函数 \texttt{whnf} 的一部分实现：
+\begin{minted}[numbers=left,baselinestretch=1]{haskell}
 whnf :: Term -> Bi Term
 whnf (LetPair a b) = whnf a >>= \case
   Prod a₁ a₂ -> whnf $ instantiate b [a₁, a₂]
@@ -425,21 +424,20 @@ whnf (LetPair a b) = whnf a >>= \case
 whnf (Cond c t e) = whnf c >>= \case
   VB b -> if b then whnf t else whnf e
   c    -> return $ If c t e
-\end{Verbatim}
+\end{minted}
 这条规则及其对应实现告诉我们，若 WHNF 化后的绑定右手侧 $a$ \emph{确实是}元组 $(a_1, a_2)$，
 则用后者代换 $b$ 中的 $x$ 和 $y$. 此外，我们还会发现 WHNF 化与常量折叠其实有部分重叠：如条件语句，
 若条件已是一常量，则继续 WHNF 化 then-分支，否则 else-分支。
 
-上述 WHNF 化工作，或更全面地说，\Tigrisd 的内核运行在 \texttt{Bi} 单子中，而这一单子的定义为
-\begin{Verbatim}[numbers=left,baselinestretch=1]
+上述 WHNF 化工作，或更全面地说，\Tigrisd 的内核运行在 \texttt{Bi} 单子中，定义为
+\begin{minted}[numbers=left,baselinestretch=1]{haskell}
 type Bi = Unbound.FreshMT (ReaderT Env (EIO TypingError))
-\end{Verbatim}
-
+\end{minted}
 \texttt{Bi} 利用了 \texttt{Unbound} 所提供的 \texttt{FreshM}、\texttt{ReaderM} 转换器（名字以 \texttt{T} 结尾），保证引入的变量名唯一\footnote{
   Cf. \Tigris 的实现：我们存储了一个计数器以达到相同的作用。
 }，
 还携带了类型环境 \texttt{Env}，可以通过 \texttt{EIO}（具备错误处理的 IO 单子）向用户报告错误（\texttt{TypingError}）。
-但必须要承认这一设计并不很“函数式”、不很“干净”。
+但必须要承认这一设计并不很“函数式”、不很“干净”。下述原因。
 
 \subparagraph{IO 的引入} 纯函数式编程鼓励传参、通过函数调用与返回实现数据的传递，同时将副作用局限在小范围函数中以方便程序员思考、维护程序。
 输入/输出是显然的副作用，且与其他模拟副作用的“纯的”单子不同，因为其必须和外界（即操作系统交互），具备真正的副作用，因而其具有传染性：任何涉及到
@@ -471,7 +469,7 @@ IO 的函数自身必须在 IO 内：否则 IO 相关的函数返回的单子值
 可以发现，等号的实现规则 $\Gamma\vdash a \xlongequal{\mathsf{impl}} b$ 相比描述等号性质的类型规则 $\Gamma\vdash A = B$ 要简单得多。
 同理，将等号两侧 WHNF 后我们即可轻易地实现项在内核中的相等判定，由中缀算符 \texttt{(<=>)}、\texttt{impleq} 给定
 撷取部分（变量、条件表达式、Let 绑定）如下。
-\begin{Verbatim}[numbers=left,baselinestretch=1]
+\begin{minted}[numbers=left,baselinestretch=1]{haskell}
 (<=>) :: Term -> Term -> FreshMT (ReaderT Env (Except TypingError)) ()
 Var x <=> Var y | x == y = return ()
 If c t e <=> If c' t' e' = c <=> c' *> t <=> t' *> e <=> e'
@@ -482,10 +480,10 @@ a <=> b | a === b = return ()
 
 impleq :: Term -> Term -> Bi ()
 impleq a b = do a <- whnf a; b <- whnf b; liftBi $ a <=> b
-\end{Verbatim}
+\end{minted}
 这里，我们吸取了 WHNF 中的教训，将 IO 副作用与等号判断分开，提升可维护性。因而仍需定义
 一自然变换 \texttt{liftBi} 将不含 IO 的 \texttt{Bi} 提升回来，
-\begin{Verbatim}[numbers=left,baselinestretch=1]
+\begin{minted}[numbers=left,baselinestretch=1]{haskell}
 liftBi :: FreshMT (ReaderT Env (Except TypingError)) ~> Bi
 liftBi (FreshMT{unFreshMT = act}) = FreshMT $
   StateT \st -> ReaderT $
@@ -493,7 +491,7 @@ liftBi (FreshMT{unFreshMT = act}) = FreshMT $
       case runExcept $ runReaderT (runStateT act st) rst of
         Left e -> throwError e
         Right x -> return x
-\end{Verbatim}
+\end{minted}
 
 \section{Discriminant Refinement}
 上一部分说过，Discriminant Refinement 实现了证明中的\emph{分情况讨论}思考方式。
@@ -611,7 +609,7 @@ inductive Sigma (A : Type) (B : A -> Type) : Type where
 
 在定理证明器中，不完备的模式矩阵是不合法的，因为其在理论上存在问题（无法保证函数的完备性）。如果
 希望省略矩阵中的某个分支，就必须要证明该分支/情况\underline{不可能存在，即产生矛盾}，
-而证明手段其中之一就是 Discriminant Refinement，且此时 \Tigrisd 可以自动判断是否完备.
+而证明手段其中之一就是 Discriminant Refinement，且此时 \Tigrisd 可以自动判断是否完备。
 从现在开始，在关于模式匹配的讨论中我们都默认模式矩阵（此处实际上是列向量）完备，
 即一定不会产生所有分支无法匹配的情况。
 
@@ -686,10 +684,11 @@ inductive EvenOddList (α : Type) (b : Bool) : Type where
 \end{figure}
 \vspace{-2em}
 \begin{analysis}
-  存在量化的含义指出，要\underline{证明一个命题存在，只需举出一种满足的情况即可}——要想编码之，就应当找到一
+  存在量化指出，要证明一个命题\emph{存在}，
+  \underline{只需举出\emph{一种}满足的情况并证明之即可}——要想编码之，就应当找到一
   代数结构存储其具备的\emph{所有信息}——我们可以通过 dependent coproduct 来编码：
   左右侧分别\emph{封装}\footnote{我们特意使用“封装”一词体现证明论的程序性解释，而非传统逻辑思维。}量化的对象、
-  对应的\emph{证明}足矣，即若 $x : A$ 且 $h : B\ x$ 则 $\inmark{a, h}:(x : A) \times B\ x$ 是
+  对应的\emph{证明}足矣，即若 $x : A$ 且 $h : B\ x$ 则 $\inmark{x, h}:(x : A) \times B\ x$ 是
   $\exists x : A.\,B\ x$ 的一个证明。
 \end{analysis}
 

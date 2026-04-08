@@ -45,14 +45,18 @@ OTTFLAGS	= -signal_parse_errors true \
 .PHONY: default clean
 
 # implied bibtex
-main.pdf:
+main.pdf: minted_replacements.sed
 	@if [ -d "_minted" ]; then \
-		find _minted -name "*.highlight.minted" -exec sed -i '' -f "minted_replacements.sed" {} + ; \
+		find _minted -name "*.highlight.minted" -exec sed -i '' -f $< {} + ; \
 		latexmk -xelatex -bibtex -f main.tex ; \
 	else \
 		latexmk -xelatex -bibtex -f main.tex ; \
-		make main.pdf ; \
+		make $@ ; \
 	fi
+
+main-outlines.pdf: main.pdf
+	gs -o $@ -dNoOutputFonts -sDEVICE=pdfwrite $<
+
 default: main.pdf
 
 clean:

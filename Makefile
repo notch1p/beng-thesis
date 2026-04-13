@@ -44,6 +44,8 @@ OTTFLAGS	= -signal_parse_errors true \
 
 .PHONY: default clean
 
+default: main.pdf pre.pdf
+
 # implied bibtex
 main.pdf: minted_replacements.sed
 	@if [ -d "_minted" ]; then \
@@ -57,8 +59,10 @@ main.pdf: minted_replacements.sed
 main-outlines.pdf: main.pdf
 	gs -o $@ -dNoOutputFonts -sDEVICE=pdfwrite $<
 
-default: main.pdf
+pre.pdf: minted_replacements.sed pre.tex
+	find _minted -name "*.highlight.minted" -exec sed -i '' -f $< {} +
+	latexmk -xelatex -f pre.tex
 
 clean:
 	latexmk -c main.tex
-	-rm main.pdf
+	-rm main.pdf pre.pdf

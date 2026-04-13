@@ -8,5 +8,9 @@ s/\\PYG{n}{extern}/\\PYG{k+kn}{extern}/g
 s/\\PYG{n\+nv}{defforeign}/\\PYG{n+nb}{defforeign}/g
 s/\\PYG{n}{partial}/\\PYG{k+kn}{partial}/g
 s/\\PYG{n}{mutual}/\\PYG{k}{mutual}/g
-s/\\PYG{n+nf}{and}/\\PYG{k+kr}{and}/g
+s/\\PYG{n\+nf}{and}/\\PYG{k+kr}{and}/g
 s/\\PYG{n}{and}/\\PYG{k+kr}{and}/g
+s/\\PYG{n}{infixr}/\\PYG{k}{infixr}/g
+s/\\PYG{n}{infixl}/\\PYG{k}{infixl}/g
+s/\\PYGZlt{}\+\\PYGZgt{}/<+>/g
+s/\\PYGZlt{}\\PYGZdl{}\\PYGZgt{}/<\$>/g

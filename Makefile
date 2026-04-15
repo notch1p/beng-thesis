@@ -20,6 +20,10 @@
 # version 1999/12/01 or later.
 #
 #
+#
+#
+
+OUTLINES = main pre
 
 OTT	     = ott $(OTTFLAGS)
 OTTFLAGS	= -signal_parse_errors true \
@@ -42,9 +46,9 @@ OTTFLAGS	= -signal_parse_errors true \
 		exit 1; \
 	fi >&2
 
-.PHONY: default clean
+.PHONY: all clean
 
-default: main.pdf pre.pdf
+all: main.pdf pre.pdf
 
 # implied bibtex
 main.pdf: minted_replacements.sed
@@ -56,7 +60,7 @@ main.pdf: minted_replacements.sed
 		make $@ ; \
 	fi
 
-main-outlines.pdf: main.pdf
+%-outlines.pdf: %.pdf
 	gs -o $@ -dNoOutputFonts -sDEVICE=pdfwrite $<
 
 pre.pdf: minted_replacements.sed pre.tex
@@ -66,3 +70,4 @@ pre.pdf: minted_replacements.sed pre.tex
 clean:
 	latexmk -c main.tex
 	-rm main.pdf pre.pdf
+

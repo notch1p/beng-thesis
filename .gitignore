@@ -366,4 +366,4 @@ TSWLatexianTemp*
 
 *.mng.tex
 report.pdf
-main-outlines.pdf
+*-outlines.pdf

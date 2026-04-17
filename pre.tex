@@ -516,7 +516,7 @@ The dependent elimination/computation rule for \texttt{Bool} is given by
 \begin{minted}{lean4}
 def recBool {α : Type} 
   (motive : Bool -> Type) (brT : motive True) (brF : motive False)  
-  : (t : Bool) -> motive t := if t then brT else brF
+  : (t : Bool) -> motive t := fun t => if t then brT else brF
 \end{minted}
 \onslide<3->{
 \begin{itemize}

@@ -54,9 +54,9 @@ all: main.pdf pre.pdf
 main.pdf: minted_replacements.sed
 	@if [ -d "_minted" ]; then \
 		find _minted -name "*.highlight.minted" -exec sed -i '' -f $< {} + ; \
-		latexmk -xelatex -bibtex -f main.tex ; \
+		latexmk -xelatex -bibtex -f --synctex=1 main.tex ; \
 	else \
-		latexmk -xelatex -bibtex -f main.tex ; \
+		latexmk -xelatex -bibtex -f --synctex=1 main.tex ; \
 		make $@ ; \
 	fi
 
@@ -65,7 +65,7 @@ main.pdf: minted_replacements.sed
 
 pre.pdf: minted_replacements.sed pre.tex
 	find _minted -name "*.highlight.minted" -exec sed -i '' -f $< {} +
-	latexmk -xelatex -f pre.tex
+	latexmk -xelatex -f --synctex=1 pre.tex
 
 clean:
 	latexmk -c main.tex
